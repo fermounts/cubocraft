@@ -1,0 +1,10 @@
+flask
+twilio
+gspread
+google-auth
+anthropic>=0.25.0
+python-dotenv
+apscheduler
+Pillow
+pytesseract
+requests
