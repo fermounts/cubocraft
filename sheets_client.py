@@ -72,6 +72,19 @@ def get_vendedora_by_phone(phone: str) -> dict | None:
 
 # ── Productos ─────────────────────────────────────────────────────────────────
 
+def get_productos_por_categoria(categoria: str, empresa: str) -> list[dict]:  # noqa: ARG001
+    try:
+        ws = _get_sheet("PRODUCTOS")
+        return [
+            r for r in ws.get_all_records()
+            if str(r.get("Apertura", "")).strip() == categoria
+            and str(r.get("Activo", "")).upper() in ("SI", "1", "TRUE", "VERDADERO")
+        ]
+    except Exception as e:
+        logger.error("get_productos_por_categoria error: %s", e)
+        return []
+
+
 def get_productos_activos() -> list[dict]:
     try:
         ws = _get_sheet("PRODUCTOS")

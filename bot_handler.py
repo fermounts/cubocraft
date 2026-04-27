@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 # ── Estados ───────────────────────────────────────────────────────────────────
 ELEGIR_EMPRESA = "ELEGIR_EMPRESA"
 MENU = "MENU"
-PEDIDO_CATALOGO = "PEDIDO_CATALOGO"
+PEDIDO_CATEGORIA = "PEDIDO_CATEGORIA"
+PEDIDO_PRODUCTOS = "PEDIDO_PRODUCTOS"
 PEDIDO_CANTIDAD = "PEDIDO_CANTIDAD"
 PEDIDO_CONFIRMAR = "PEDIDO_CONFIRMAR"
 PAGO_MONTO = "PAGO_MONTO"
@@ -23,6 +24,29 @@ BAJA_CONFIRMAR = "BAJA_CONFIRMAR"
 CONSULTA_IA = "CONSULTA_IA"
 POST_ACCION = "POST_ACCION"
 SUPER_CANDIDATAS = "SUPER_CANDIDATAS"
+
+# ── Categorías de producto por empresa ────────────────────────────────────────
+# (clave en Apertura, nombre de display)
+_CATEGORIAS: dict[str, list[tuple[str, str]]] = {
+    "CUBO": [
+        ("Cabeza",       "🪖 Cabeza — Cascos"),
+        ("Calzado",      "👢 Calzado"),
+        ("Visual",       "🥽 Visual"),
+        ("Auditiva",     "🎧 Auditiva"),
+        ("Manos",        "🧤 Manos y guantes"),
+        ("Altura",       "🪢 Altura y arneses"),
+        ("Respiratoria", "😷 Respiratoria"),
+        ("Cuerpo",       "🦺 Cuerpo"),
+    ],
+    "CRAFT": [
+        ("Mamposteria",        "🧱 Mampostería y estructuras"),
+        ("Construccion_seco",  "🏗️ Construcción en seco"),
+        ("Impermeabilizacion", "💧 Impermeabilización"),
+        ("Terminaciones",      "🎨 Terminaciones"),
+        ("Aislacion",          "🌡️ Aislación"),
+        ("Reparaciones",       "🔧 Reparaciones"),
+    ],
+}
 
 # ── Menú unificado ────────────────────────────────────────────────────────────
 _MENU_MAP: dict[str, str] = {
@@ -36,8 +60,7 @@ _MENU_MAP: dict[str, str] = {
     "8": "baja",
 }
 
-_COMANDOS_RESET = {"cancelar", "menu", "menú", "0", "hola"}
-_COMANDOS_CONTROL = {"si", "sí", "no", "cancelar", "listo", "fin", "menu", "menú", "hola"}
+_COMANDOS_CONTROL = {"si", "sí", "no", "listo", "fin"}
 
 _ai_client: anthropic.Anthropic | None = None
 
@@ -47,6 +70,16 @@ def _get_ai_client() -> anthropic.Anthropic:
     if _ai_client is None:
         _ai_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
     return _ai_client
+
+
+# ── Renders reutilizables ─────────────────────────────────────────────────────
+
+def _selector_empresa(nombre: str) -> str:
+    return (
+        f"Hola {nombre}! 👋 ¿Con qué empresa querés operar?\n\n"
+        "1️⃣ CUBO — Seguridad e Higiene 👷\n"
+        "2️⃣ CRAFT — Métodos Constructivos 🏗️"
+    )
 
 
 def _menu_texto(empresa: str, es_supervisor: bool) -> str:
@@ -67,6 +100,50 @@ def _menu_texto(empresa: str, es_supervisor: bool) -> str:
     return base
 
 
+def _render_categorias(empresa: str, carrito: list) -> str:
+    categorias = _CATEGORIAS.get(empresa, [])
+    lines = []
+
+    if carrito:
+        lines.append("🛒 *Tu pedido:*")
+        subtotal = 0.0
+        for item in carrito:
+            precio = float(item["producto"].get("Precio_Vendedor", 0))
+            cantidad = item["cantidad"]
+            desc_pct = item.get("descuento_pct", 0)
+            total_item = round(precio * cantidad * (1 - desc_pct / 100), 0)
+            subtotal += total_item
+            lines.append(f"• {item['producto'].get('Nombre','?')} x{cantidad} = ${total_item:.0f}")
+        lines.append(f"Subtotal: ${subtotal:.0f}\n")
+
+    header = "👷 *CUBO — Elegí una categoría:*" if empresa == "CUBO" else "🏗️ *CRAFT — Elegí una categoría:*"
+    lines.append(header)
+    for i, (_, display) in enumerate(categorias, 1):
+        lines.append(f"{i}. {display}")
+
+    if carrito:
+        lines.append("\nEscribí el número o *LISTO* para cerrar el pedido")
+    else:
+        lines.append("\nEscribí el número de categoría")
+    lines.append("00 menú  |  000 cambiar empresa")
+    return "\n".join(lines)
+
+
+def _render_productos(clave: str, nombre_display: str, empresa: str) -> str:
+    productos = sheets_client.get_productos_por_categoria(clave, empresa)
+    if not productos:
+        return (
+            f"📦 *{nombre_display}*\n\n"
+            "No hay productos disponibles en esta categoría aún.\n\n"
+            "0 para volver a categorías"
+        )
+    lines = [f"📦 *{nombre_display}*\n"]
+    for i, p in enumerate(productos, 1):
+        lines.append(f"{i}. {p.get('Nombre','?')} — ${p.get('Precio_Vendedor','?')}")
+    lines.append("\nEscribí el número o 0 para volver a categorías")
+    return "\n".join(lines)
+
+
 def _post_prompt() -> str:
     return "\n\n1️⃣ Volver al menú  |  2️⃣ Hasta pronto 👋"
 
@@ -80,16 +157,6 @@ def _es_pregunta_abierta(texto: str) -> bool:
     if len(t) <= 6 and t.replace("-", "").replace("_", "").isalnum():
         return False
     return True
-
-
-def _catalogo_texto(productos: list[dict]) -> str:
-    if not productos:
-        return "No hay productos disponibles en este momento."
-    lines = ["📦 *Catálogo:*\n"]
-    for p in productos:
-        lines.append(f"• [{p.get('ID','?')}] {p.get('Nombre','?')} — ${p.get('Precio_Vendedor','?')}")
-    lines.append("\nEscribí el *ID* del producto para agregarlo al carrito.\nO escribí *LISTO* para cerrar el pedido.")
-    return "\n".join(lines)
 
 
 # ── Consulta IA ───────────────────────────────────────────────────────────────
@@ -106,7 +173,6 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
         if empresa == "CUBO"
         else "Métodos Constructivos (CIRSOC 201, IRAM 1597)"
     )
-
     system_text = (
         "Sos el Ingeniero Experto de CUBOCRAFT. "
         "Respondés en español, máximo 4-5 líneas (es para WhatsApp). "
@@ -140,11 +206,6 @@ def procesar(phone: str, texto: str, media_url: str | None = None) -> str:
     texto = (texto or "").strip()
     t = texto.lower()
 
-    if t in _COMANDOS_RESET:
-        session_store.clear(phone)
-        t = ""
-        texto = ""
-
     session = session_store.get(phone)
     estado = session.get("estado", MENU)
 
@@ -155,29 +216,43 @@ def procesar(phone: str, texto: str, media_url: str | None = None) -> str:
             "No encontré tu cuenta registrada. "
             "Contactá a tu supervisora para activar tu acceso."
         )
-
     if not session.get("vendedor"):
         session_store.set(phone, estado, vendedor=vendedor)
 
     sup_phone = (config.SUPERVISORA_PHONE or "").lstrip("+")
     es_supervisor = phone.removeprefix("whatsapp:").lstrip("+") == sup_phone
+    nombre = vendedor.get("Nombre", "")
 
-    # Si no hay empresa elegida → selector
+    # ── Navegación global ────────────────────────────────────────────────────
+    if t == "hola":
+        session_store.clear(phone)
+        session_store.set(phone, ELEGIR_EMPRESA, vendedor=vendedor)
+        return _selector_empresa(nombre)
+
+    if t in ("000", "cancelar"):
+        session_store.set(phone, ELEGIR_EMPRESA, vendedor=vendedor)
+        return _selector_empresa(nombre)
+
+    if t in ("00", "menu", "menú"):
+        empresa = session.get("empresa") or ""
+        if not empresa:
+            session_store.set(phone, ELEGIR_EMPRESA, vendedor=vendedor)
+            return _selector_empresa(nombre)
+        session_store.set(phone, MENU, vendedor=vendedor)
+        return _menu_texto(empresa, es_supervisor)
+
+    # ── Sin empresa elegida ───────────────────────────────────────────────────
     if not session.get("empresa") and estado != ELEGIR_EMPRESA:
         session_store.set(phone, ELEGIR_EMPRESA, vendedor=vendedor)
-        nombre = vendedor.get("Nombre", "")
-        return (
-            f"Hola {nombre}! 👋 ¿Con qué empresa querés operar?\n\n"
-            "1️⃣ CUBO — Seguridad e Higiene 👷\n"
-            "2️⃣ CRAFT — Métodos Constructivos 🏗️"
-        )
+        return _selector_empresa(nombre)
 
     handlers = {
         ELEGIR_EMPRESA:  lambda: _handle_elegir_empresa(phone, t, vendedor, es_supervisor),
         MENU:            lambda: _handle_menu(phone, t, texto, vendedor, es_supervisor),
-        PEDIDO_CATALOGO: lambda: _handle_pedido_catalogo(phone, texto, vendedor),
-        PEDIDO_CANTIDAD: lambda: _handle_pedido_cantidad(phone, texto, vendedor),
-        PEDIDO_CONFIRMAR:lambda: _handle_pedido_confirmar(phone, t, vendedor),
+        PEDIDO_CATEGORIA:lambda: _handle_pedido_categoria(phone, t, texto, vendedor, es_supervisor),
+        PEDIDO_PRODUCTOS:lambda: _handle_pedido_productos(phone, t, texto, vendedor),
+        PEDIDO_CANTIDAD: lambda: _handle_pedido_cantidad(phone, t, texto, vendedor),
+        PEDIDO_CONFIRMAR:lambda: _handle_pedido_confirmar(phone, t, texto, vendedor),
         PAGO_MONTO:      lambda: _handle_pago_monto(phone, texto, vendedor),
         PAGO_METODO:     lambda: _handle_pago_metodo(phone, t, vendedor),
         PAGO_COMPROBANTE:lambda: _handle_pago_comprobante(phone, texto, media_url, vendedor),
@@ -204,15 +279,9 @@ def _handle_elegir_empresa(phone: str, t: str, vendedor: dict, es_supervisor: bo
     elif t == "2":
         empresa = "CRAFT"
     else:
-        nombre = vendedor.get("Nombre", "")
-        return (
-            f"Hola {nombre}! 👋 ¿Con qué empresa querés operar?\n\n"
-            "1️⃣ CUBO — Seguridad e Higiene 👷\n"
-            "2️⃣ CRAFT — Métodos Constructivos 🏗️"
-        )
+        return _selector_empresa(vendedor.get("Nombre", ""))
     session_store.set(phone, MENU, vendedor=vendedor, empresa=empresa)
-    nombre = vendedor.get("Nombre", "")
-    return f"Hola {nombre}! 👋\n\n{_menu_texto(empresa, es_supervisor)}"
+    return f"Hola {vendedor.get('Nombre','')}! 👋\n\n{_menu_texto(empresa, es_supervisor)}"
 
 
 # ── Menú ──────────────────────────────────────────────────────────────────────
@@ -228,8 +297,7 @@ def _handle_menu(
     empresa = session.get("empresa", "CUBO")
 
     if not t:
-        nombre = vendedor.get("Nombre", "")
-        return f"Hola {nombre}! 👋\n\n{_menu_texto(empresa, es_supervisor)}"
+        return f"Hola {vendedor.get('Nombre','')}! 👋\n\n{_menu_texto(empresa, es_supervisor)}"
 
     if _es_pregunta_abierta(texto_original):
         respuesta = procesar_consulta_ia(texto_original, empresa)
@@ -250,13 +318,9 @@ def _ejecutar_accion(
     empresa: str,
     es_supervisor: bool,
 ) -> str:
-    apertura = "EPP" if empresa == "CUBO" else "MC"
-
     if accion == "catalogo":
-        productos = sheets_client.get_productos_activos()
-        filtrados = [p for p in productos if str(p.get("Apertura", "")).upper() == apertura]
-        session_store.set(phone, PEDIDO_CATALOGO, vendedor=vendedor, carrito=[])
-        return _catalogo_texto(filtrados or productos)
+        session_store.set(phone, PEDIDO_CATEGORIA, vendedor=vendedor, carrito=[])
+        return _render_categorias(empresa, [])
 
     if accion == "pago":
         session_store.set(phone, PAGO_MONTO, vendedor=vendedor)
@@ -370,111 +434,146 @@ def _handle_super_candidatas(phone: str, texto: str, vendedor: dict) -> str:
 
 # ── Flujo PEDIDO ──────────────────────────────────────────────────────────────
 
-def _handle_pedido_catalogo(phone: str, texto: str, vendedor: dict) -> str:
+def _handle_pedido_categoria(
+    phone: str,
+    t: str,
+    texto: str,
+    vendedor: dict,
+    es_supervisor: bool,
+) -> str:
     session = session_store.get(phone)
     empresa = session.get("empresa", "CUBO")
-    apertura = "EPP" if empresa == "CUBO" else "MC"
+    carrito = session.get("carrito", [])
+    categorias = _CATEGORIAS.get(empresa, [])
 
     if texto.strip().upper() == "LISTO":
         return _cerrar_pedido(phone, vendedor, session)
 
-    producto = sheets_client.get_producto_by_id(texto.strip())
-    if not producto:
-        productos = sheets_client.get_productos_activos()
-        filtrados = [p for p in productos if str(p.get("Apertura", "")).upper() == apertura]
-        return f"ID '{texto}' no encontrado.\n\n" + _catalogo_texto(filtrados or productos)
+    if t == "0":
+        session_store.set(phone, MENU, vendedor=vendedor)
+        return _menu_texto(empresa, es_supervisor)
 
+    try:
+        idx = int(t) - 1
+        if idx < 0 or idx >= len(categorias):
+            raise ValueError
+    except (ValueError, TypeError):
+        return _render_categorias(empresa, carrito)
+
+    clave, nombre_display = categorias[idx]
+    session_store.set(phone, PEDIDO_PRODUCTOS, vendedor=vendedor,
+                      categoria_clave=clave,
+                      categoria_nombre=nombre_display)
+    return _render_productos(clave, nombre_display, empresa)
+
+
+def _handle_pedido_productos(phone: str, t: str, texto: str, vendedor: dict) -> str:
+    session = session_store.get(phone)
+    empresa = session.get("empresa", "CUBO")
+    clave = session.get("categoria_clave", "")
+    nombre_display = session.get("categoria_nombre", "")
+    carrito = session.get("carrito", [])
+
+    if texto.strip().upper() == "LISTO":
+        return _cerrar_pedido(phone, vendedor, session)
+
+    if t == "0":
+        session_store.set(phone, PEDIDO_CATEGORIA, vendedor=vendedor)
+        return _render_categorias(empresa, carrito)
+
+    productos = sheets_client.get_productos_por_categoria(clave, empresa)
+    try:
+        idx = int(t) - 1
+        if idx < 0 or idx >= len(productos):
+            raise ValueError
+    except (ValueError, TypeError):
+        return _render_productos(clave, nombre_display, empresa)
+
+    producto = productos[idx]
     session_store.set(phone, PEDIDO_CANTIDAD, vendedor=vendedor,
-                      carrito=session.get("carrito", []),
                       producto_seleccionado=producto)
     return (
-        f"✅ *{producto.get('Nombre','?')}*\n"
-        f"Precio: ${producto.get('Precio_Vendedor','?')}\n\n"
-        "¿Qué cantidad querés?"
+        f"*{producto.get('Nombre','?')}* — ${producto.get('Precio_Vendedor','?')}/u\n\n"
+        "¿Cuántas unidades?\n\n"
+        "0 para volver a productos"
     )
 
 
-def _handle_pedido_cantidad(phone: str, texto: str, vendedor: dict) -> str:
+def _handle_pedido_cantidad(phone: str, t: str, texto: str, vendedor: dict) -> str:
+    session = session_store.get(phone)
+    empresa = session.get("empresa", "CUBO")
+    clave = session.get("categoria_clave", "")
+    nombre_display = session.get("categoria_nombre", "")
+    carrito = session.get("carrito", [])
+
+    if texto.strip().upper() == "LISTO":
+        return _cerrar_pedido(phone, vendedor, session)
+
+    if t == "0":
+        session_store.set(phone, PEDIDO_PRODUCTOS, vendedor=vendedor)
+        return _render_productos(clave, nombre_display, empresa)
+
     try:
-        cantidad = int(texto.strip())
+        cantidad = int(t)
         if cantidad <= 0:
             raise ValueError
-    except ValueError:
-        return "Ingresá un número entero positivo (ej: 3)."
+    except (ValueError, TypeError):
+        return "Ingresá un número entero positivo (ej: 3) o 0 para volver."
 
-    session = session_store.get(phone)
     producto = session.get("producto_seleccionado", {})
     precio = float(producto.get("Precio_Vendedor", 0))
     subtotal = precio * cantidad
     campana, desc_pct, total_desc = sheets_client.aplicar_mejor_descuento(vendedor, subtotal)
 
-    desc_txt = ""
-    if campana and desc_pct > 0:
-        ahorro = subtotal - total_desc
-        desc_txt = (
-            f"\n🎁 Descuento {campana.get('Nombre','')} ({desc_pct:.0f}%): "
-            f"-${ahorro:.2f} → Total: ${total_desc:.2f}"
-        )
+    total_item = total_desc if (campana and desc_pct > 0) else subtotal
+    desc_txt = f" (con {desc_pct:.0f}% dto.)" if (campana and desc_pct > 0) else ""
 
     session_store.set(phone, PEDIDO_CONFIRMAR, vendedor=vendedor,
-                      carrito=session.get("carrito", []),
-                      producto_seleccionado=producto,
+                      carrito=carrito,
                       cantidad_seleccionada=cantidad,
                       campana_seleccionada=campana,
                       descuento_seleccionado=desc_pct)
     return (
-        "📦 *Confirmar item:*\n"
-        f"Producto: {producto.get('Nombre','?')}\n"
-        f"Cantidad: {cantidad}\n"
-        f"Precio unitario: ${precio:.2f}\n"
-        f"Subtotal: ${subtotal:.2f}{desc_txt}\n\n"
-        "¿Confirmás? (SI / NO · o LISTO para cerrar el pedido)"
+        f"• *{producto.get('Nombre','?')}* x{cantidad} = ${total_item:.0f}{desc_txt}\n\n"
+        "SI para agregar / NO para descartar"
     )
 
 
-def _handle_pedido_confirmar(phone: str, t: str, vendedor: dict) -> str:
+def _handle_pedido_confirmar(phone: str, t: str, texto: str, vendedor: dict) -> str:
     session = session_store.get(phone)
     empresa = session.get("empresa", "CUBO")
-    apertura = "EPP" if empresa == "CUBO" else "MC"
+    clave = session.get("categoria_clave", "")
+    nombre_display = session.get("categoria_nombre", "")
+    carrito = list(session.get("carrito", []))
 
-    if t == "listo":
+    if texto.strip().upper() == "LISTO":
         return _cerrar_pedido(phone, vendedor, session)
 
     if t in ("si", "sí"):
-        carrito: list = list(session.get("carrito", []))
+        producto = session.get("producto_seleccionado", {})
         carrito.append({
-            "producto": session.get("producto_seleccionado", {}),
+            "producto": producto,
             "cantidad": session.get("cantidad_seleccionada", 1),
             "descuento_pct": session.get("descuento_seleccionado", 0),
             "campana": session.get("campana_seleccionada"),
         })
-        productos = sheets_client.get_productos_activos()
-        filtrados = [p for p in productos if str(p.get("Apertura", "")).upper() == apertura]
-        session_store.set(phone, PEDIDO_CATALOGO, vendedor=vendedor,
+        session_store.set(phone, PEDIDO_CATEGORIA, vendedor=vendedor,
                           carrito=carrito, producto_seleccionado=None)
-        resumen = "\n".join(
-            f"  • {i['producto'].get('Nombre','?')} x{i['cantidad']}" for i in carrito
-        )
-        return (
-            f"✅ Agregado al carrito ({len(carrito)} item/s):\n{resumen}\n\n"
-            + _catalogo_texto(filtrados or productos)
-        )
+        return _render_categorias(empresa, carrito)
 
-    if t == "no":
-        productos = sheets_client.get_productos_activos()
-        filtrados = [p for p in productos if str(p.get("Apertura", "")).upper() == apertura]
-        session_store.set(phone, PEDIDO_CATALOGO, vendedor=vendedor,
-                          carrito=session.get("carrito", []))
-        return "Item cancelado.\n\n" + _catalogo_texto(filtrados or productos)
+    if t == "no" or t == "0":
+        session_store.set(phone, PEDIDO_PRODUCTOS, vendedor=vendedor, carrito=carrito)
+        return _render_productos(clave, nombre_display, empresa)
 
-    return "Respondé SI, NO o LISTO."
+    return "SI para agregar al carrito / NO para descartar / LISTO para cerrar el pedido"
 
 
 def _cerrar_pedido(phone: str, vendedor: dict, session: dict) -> str:
     carrito: list = session.get("carrito", [])
     if not carrito:
-        session_store.set(phone, MENU, vendedor=vendedor)
-        return "El carrito está vacío."
+        empresa = session.get("empresa", "CUBO")
+        session_store.set(phone, PEDIDO_CATEGORIA, vendedor=vendedor, carrito=[])
+        return "El carrito está vacío.\n\n" + _render_categorias(empresa, [])
 
     ids_registrados = []
     for item in carrito:
