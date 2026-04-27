@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from datetime import date, datetime
 
 import gspread
@@ -23,10 +24,19 @@ METODOS: dict[str, str] = {
 _gc: gspread.Client | None = None
 
 
+def _load_creds_data(value: str) -> dict:
+    """Acepta ruta a archivo .json o JSON inline como string."""
+    value = value.strip()
+    if value.endswith(".json") and os.path.isfile(value):
+        with open(value) as f:
+            return json.load(f)
+    return json.loads(value)
+
+
 def _get_client() -> gspread.Client:
     global _gc
     if _gc is None:
-        creds_data = json.loads(config.GOOGLE_CREDS_JSON)
+        creds_data = _load_creds_data(config.GOOGLE_CREDS_JSON)
         creds = Credentials.from_service_account_info(creds_data, scopes=SCOPES)
         _gc = gspread.authorize(creds)
     return _gc
@@ -37,7 +47,7 @@ def _get_sheet(name: str) -> gspread.Worksheet:
 
 
 def _normalize_phone(phone: str) -> str:
-    return phone.lstrip("+").strip()
+    return phone.removeprefix("whatsapp:").lstrip("+").strip()
 
 
 # ── Vendedores ────────────────────────────────────────────────────────────────
@@ -46,10 +56,13 @@ def get_vendedora_by_phone(phone: str) -> dict | None:
     try:
         ws = _get_sheet("VENDEDORES")
         target = _normalize_phone(phone)
+        logger.info("get_vendedora_by_phone → raw=%r  normalizado=%r", phone, target)
         for r in ws.get_all_records():
             stored = _normalize_phone(str(r.get("Teléfono", "")))
+            logger.debug("  comparando stored=%r vs target=%r", stored, target)
             if stored == target and str(r.get("Activa", "")).upper() in ("SI", "1", "TRUE", "VERDADERO"):
                 return r
+        logger.warning("get_vendedora_by_phone → sin match para %r", target)
         return None
     except Exception as e:
         logger.error("get_vendedora_by_phone error: %s", e)
