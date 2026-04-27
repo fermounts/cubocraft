@@ -132,6 +132,11 @@ def registrar_pedido(
 
 
 def get_ultimo_pedido(vendedor: dict) -> dict | None:
+    pedidos = get_ultimos_pedidos(vendedor, limite=1)
+    return pedidos[0] if pedidos else None
+
+
+def get_ultimos_pedidos(vendedor: dict, limite: int = 5) -> list[dict]:
     try:
         ws = _get_sheet("PEDIDOS")
         vid = str(vendedor.get("ID", ""))
@@ -140,10 +145,10 @@ def get_ultimo_pedido(vendedor: dict) -> dict | None:
             r for r in ws.get_all_records()
             if str(r.get("ID_Vendedor", "")) == vid or str(r.get("Nombre_Vendedor", "")) == nombre
         ]
-        return pedidos[-1] if pedidos else None
+        return pedidos[-limite:] if pedidos else []
     except Exception as e:
-        logger.error("get_ultimo_pedido error: %s", e)
-        return None
+        logger.error("get_ultimos_pedidos error: %s", e)
+        return []
 
 
 # ── Pagos ─────────────────────────────────────────────────────────────────────

@@ -10,6 +10,7 @@ import whatsapp_client
 logger = logging.getLogger(__name__)
 
 # ── Estados ───────────────────────────────────────────────────────────────────
+ELEGIR_EMPRESA = "ELEGIR_EMPRESA"
 MENU = "MENU"
 PEDIDO_CATALOGO = "PEDIDO_CATALOGO"
 PEDIDO_CANTIDAD = "PEDIDO_CANTIDAD"
@@ -23,66 +24,16 @@ CONSULTA_IA = "CONSULTA_IA"
 POST_ACCION = "POST_ACCION"
 SUPER_CANDIDATAS = "SUPER_CANDIDATAS"
 
-# ── Mapas de menú por perfil ──────────────────────────────────────────────────
-_MENU_MAP: dict[str, dict[str, str]] = {
-    "Seguridad": {
-        "1": "catalogo_epp",
-        "2": "pago",
-        "3": "saldo",
-        "4": "ranking",
-        "5": "ia",
-        "6": "baja",
-    },
-    "Asesor": {
-        "1": "calculadora",
-        "2": "pago",
-        "3": "saldo",
-        "4": "ranking",
-        "5": "ia",
-        "6": "baja",
-    },
-    "": {
-        "1": "catalogo",
-        "2": "mis_pedidos",
-        "3": "pago",
-        "4": "saldo",
-        "5": "ranking",
-        "6": "ia",
-        "7": "baja",
-        "8": "ayuda",
-    },
-}
-
-_MENU_TEXTO: dict[str, str] = {
-    "Seguridad": (
-        "🏗️ *CUBOCRAFT — EPP & Seguridad*\n"
-        "1️⃣ Catálogo EPP\n"
-        "2️⃣ Registrar pago\n"
-        "3️⃣ Ver saldo\n"
-        "4️⃣ Mi ranking\n"
-        "5️⃣ Consulta técnica IA\n"
-        "6️⃣ Solicitar baja\n"
-    ),
-    "Asesor": (
-        "🏗️ *CUBOCRAFT — Métodos Constructivos*\n"
-        "1️⃣ Calculadora de obra\n"
-        "2️⃣ Registrar pago\n"
-        "3️⃣ Ver saldo\n"
-        "4️⃣ Mi ranking\n"
-        "5️⃣ Consulta técnica IA\n"
-        "6️⃣ Solicitar baja\n"
-    ),
-    "": (
-        "🏗️ *CUBOCRAFT — Menú Principal*\n"
-        "1️⃣ Ver catálogo / hacer pedido\n"
-        "2️⃣ Ver mis pedidos\n"
-        "3️⃣ Registrar pago\n"
-        "4️⃣ Ver saldo\n"
-        "5️⃣ Mi ranking\n"
-        "6️⃣ Consulta técnica IA\n"
-        "7️⃣ Solicitar baja\n"
-        "8️⃣ Ayuda\n"
-    ),
+# ── Menú unificado ────────────────────────────────────────────────────────────
+_MENU_MAP: dict[str, str] = {
+    "1": "catalogo",
+    "2": "pago",
+    "3": "saldo",
+    "4": "mis_pedidos",
+    "5": "ranking",
+    "6": "ia",
+    "7": "supervisor",
+    "8": "baja",
 }
 
 _COMANDOS_RESET = {"cancelar", "menu", "menú", "0", "hola"}
@@ -98,13 +49,22 @@ def _get_ai_client() -> anthropic.Anthropic:
     return _ai_client
 
 
-def _menu_texto(perfil: str, es_supervisor: bool) -> str:
-    base = _MENU_TEXTO.get(perfil, _MENU_TEXTO[""])
-    return base + ("9️⃣ Panel supervisor\n" if es_supervisor else "")
-
-
-def _menu_map(perfil: str) -> dict[str, str]:
-    return _MENU_MAP.get(perfil, _MENU_MAP[""])
+def _menu_texto(empresa: str, es_supervisor: bool) -> str:
+    header = "👷 *CUBO — Seguridad e Higiene*" if empresa == "CUBO" else "🏗️ *CRAFT — Métodos Constructivos*"
+    base = (
+        f"{header}\n\n"
+        "1️⃣ Hacer un pedido\n"
+        "2️⃣ Registrar un pago\n"
+        "3️⃣ Ver mi saldo\n"
+        "4️⃣ Mis pedidos\n"
+        "5️⃣ Ranking del mes\n"
+        "6️⃣ Consulta técnica IA 🤖\n"
+        "7️⃣ Hablar con el supervisor\n"
+        "8️⃣ Solicitar baja o pausa\n"
+    )
+    if es_supervisor:
+        base += "9️⃣ Panel supervisor 🔒\n"
+    return base
 
 
 def _post_prompt() -> str:
@@ -117,7 +77,6 @@ def _es_pregunta_abierta(texto: str) -> bool:
         return False
     if t in _COMANDOS_CONTROL:
         return False
-    # Códigos de producto cortos (ej: P01, EPP3)
     if len(t) <= 6 and t.replace("-", "").replace("_", "").isalnum():
         return False
     return True
@@ -135,21 +94,25 @@ def _catalogo_texto(productos: list[dict]) -> str:
 
 # ── Consulta IA ───────────────────────────────────────────────────────────────
 
-def procesar_consulta_ia(texto_usuario: str, perfil_vendedor: str) -> str:
+def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
     conocimiento = sheets_client.get_conocimiento_tecnico()
     ctx = "\n".join(
-        f"TEMA: {k.get('TEMA','')} | NORMA: {k.get('NORMA','')} | CONCEPTO: {k.get('CONCEPTO_CLAVE','')}"
+        f"ID: {k.get('ID_Norma','')} | NORMA: {k.get('Nombre_Norma','')} | ALCANCE: {k.get('Alcance','')}"
         for k in conocimiento
     ) or "Sin conocimiento técnico cargado."
+
+    linea = (
+        "EPP (IRAM 3620 cascos, IRAM 3627 calzado, IRAM 3649 guantes, SRT 299/11)"
+        if empresa == "CUBO"
+        else "Métodos Constructivos (CIRSOC 201, IRAM 1597)"
+    )
 
     system_text = (
         "Sos el Ingeniero Experto de CUBOCRAFT. "
         "Respondés en español, máximo 4-5 líneas (es para WhatsApp). "
         "Citás normativas IRAM, CIRSOC, SRT según corresponda. "
-        "Líneas de negocio: EPP (IRAM 3620 cascos, IRAM 3610 calzado, SRT 299/11) "
-        "y Métodos Constructivos (CIRSOC 201, IRAM 1597).\n\n"
-        f"Conocimiento técnico disponible:\n{ctx}\n\n"
-        f"Perfil del usuario: {perfil_vendedor}"
+        f"Línea de negocio activa: {linea}.\n\n"
+        f"Conocimiento técnico disponible:\n{ctx}"
     )
     try:
         resp = _get_ai_client().messages.create(
@@ -173,6 +136,7 @@ def procesar_consulta_ia(texto_usuario: str, perfil_vendedor: str) -> str:
 # ── Router principal ──────────────────────────────────────────────────────────
 
 def procesar(phone: str, texto: str, media_url: str | None = None) -> str:
+    logger.info("procesar() → phone=%r  texto=%r", phone, texto)
     texto = (texto or "").strip()
     t = texto.lower()
 
@@ -195,12 +159,22 @@ def procesar(phone: str, texto: str, media_url: str | None = None) -> str:
     if not session.get("vendedor"):
         session_store.set(phone, estado, vendedor=vendedor)
 
-    perfil = str(vendedor.get("Perfil", "")).strip()
     sup_phone = (config.SUPERVISORA_PHONE or "").lstrip("+")
-    es_supervisor = phone.lstrip("+") == sup_phone
+    es_supervisor = phone.removeprefix("whatsapp:").lstrip("+") == sup_phone
+
+    # Si no hay empresa elegida → selector
+    if not session.get("empresa") and estado != ELEGIR_EMPRESA:
+        session_store.set(phone, ELEGIR_EMPRESA, vendedor=vendedor)
+        nombre = vendedor.get("Nombre", "")
+        return (
+            f"Hola {nombre}! 👋 ¿Con qué empresa querés operar?\n\n"
+            "1️⃣ CUBO — Seguridad e Higiene 👷\n"
+            "2️⃣ CRAFT — Métodos Constructivos 🏗️"
+        )
 
     handlers = {
-        MENU:            lambda: _handle_menu(phone, t, texto, vendedor, perfil, es_supervisor),
+        ELEGIR_EMPRESA:  lambda: _handle_elegir_empresa(phone, t, vendedor, es_supervisor),
+        MENU:            lambda: _handle_menu(phone, t, texto, vendedor, es_supervisor),
         PEDIDO_CATALOGO: lambda: _handle_pedido_catalogo(phone, texto, vendedor),
         PEDIDO_CANTIDAD: lambda: _handle_pedido_cantidad(phone, texto, vendedor),
         PEDIDO_CONFIRMAR:lambda: _handle_pedido_confirmar(phone, t, vendedor),
@@ -209,16 +183,36 @@ def procesar(phone: str, texto: str, media_url: str | None = None) -> str:
         PAGO_COMPROBANTE:lambda: _handle_pago_comprobante(phone, texto, media_url, vendedor),
         PAGO_CONFIRMAR:  lambda: _handle_pago_confirmar(phone, t, vendedor),
         BAJA_CONFIRMAR:  lambda: _handle_baja_confirmar(phone, t, vendedor),
-        CONSULTA_IA:     lambda: _handle_consulta_ia(phone, texto, vendedor, perfil),
-        POST_ACCION:     lambda: _handle_post_accion(phone, t, vendedor, perfil, es_supervisor),
+        CONSULTA_IA:     lambda: _handle_consulta_ia(phone, texto, vendedor),
+        POST_ACCION:     lambda: _handle_post_accion(phone, t, vendedor, es_supervisor),
         SUPER_CANDIDATAS:lambda: _handle_super_candidatas(phone, texto, vendedor),
     }
 
     handler = handlers.get(estado)
     if handler is None:
+        empresa = session.get("empresa", "CUBO")
         session_store.set(phone, MENU, vendedor=vendedor)
-        return _menu_texto(perfil, es_supervisor)
+        return _menu_texto(empresa, es_supervisor)
     return handler()
+
+
+# ── Elegir empresa ────────────────────────────────────────────────────────────
+
+def _handle_elegir_empresa(phone: str, t: str, vendedor: dict, es_supervisor: bool) -> str:
+    if t == "1":
+        empresa = "CUBO"
+    elif t == "2":
+        empresa = "CRAFT"
+    else:
+        nombre = vendedor.get("Nombre", "")
+        return (
+            f"Hola {nombre}! 👋 ¿Con qué empresa querés operar?\n\n"
+            "1️⃣ CUBO — Seguridad e Higiene 👷\n"
+            "2️⃣ CRAFT — Métodos Constructivos 🏗️"
+        )
+    session_store.set(phone, MENU, vendedor=vendedor, empresa=empresa)
+    nombre = vendedor.get("Nombre", "")
+    return f"Hola {nombre}! 👋\n\n{_menu_texto(empresa, es_supervisor)}"
 
 
 # ── Menú ──────────────────────────────────────────────────────────────────────
@@ -228,65 +222,41 @@ def _handle_menu(
     t: str,
     texto_original: str,
     vendedor: dict,
-    perfil: str,
     es_supervisor: bool,
 ) -> str:
+    session = session_store.get(phone)
+    empresa = session.get("empresa", "CUBO")
+
     if not t:
-        session_store.set(phone, MENU, vendedor=vendedor)
         nombre = vendedor.get("Nombre", "")
-        return f"Hola {nombre}! 👋\n\n{_menu_texto(perfil, es_supervisor)}"
+        return f"Hola {nombre}! 👋\n\n{_menu_texto(empresa, es_supervisor)}"
 
     if _es_pregunta_abierta(texto_original):
-        respuesta = procesar_consulta_ia(texto_original, perfil)
+        respuesta = procesar_consulta_ia(texto_original, empresa)
         session_store.set(phone, POST_ACCION, vendedor=vendedor)
         return f"🤖 {respuesta}" + _post_prompt()
 
     if t == "9" and es_supervisor:
         return _iniciar_super_candidatas(phone, vendedor)
 
-    accion = _menu_map(perfil).get(t)
-    return _ejecutar_accion(phone, accion, vendedor, perfil, es_supervisor)
+    accion = _MENU_MAP.get(t)
+    return _ejecutar_accion(phone, accion, vendedor, empresa, es_supervisor)
 
 
 def _ejecutar_accion(
     phone: str,
     accion: str | None,
     vendedor: dict,
-    perfil: str,
+    empresa: str,
     es_supervisor: bool,
 ) -> str:
-    if accion in ("catalogo", "catalogo_epp"):
+    apertura = "EPP" if empresa == "CUBO" else "MC"
+
+    if accion == "catalogo":
         productos = sheets_client.get_productos_activos()
-        if accion == "catalogo_epp":
-            filtrados = [
-                p for p in productos
-                if "epp" in str(p.get("Categoría", "")).lower()
-                or "seguridad" in str(p.get("Categoría", "")).lower()
-            ]
-            productos = filtrados or productos
+        filtrados = [p for p in productos if str(p.get("Apertura", "")).upper() == apertura]
         session_store.set(phone, PEDIDO_CATALOGO, vendedor=vendedor, carrito=[])
-        return _catalogo_texto(productos)
-
-    if accion == "calculadora":
-        session_store.set(phone, MENU, vendedor=vendedor)
-        return (
-            "🧱 *Calculadora de Obra*\n"
-            "Describí el trabajo (ej: 'necesito cubrir 50m² con mortero') "
-            "y te ayudo a calcular los materiales y cantidades necesarias."
-        )
-
-    if accion == "mis_pedidos":
-        pedido = sheets_client.get_ultimo_pedido(vendedor)
-        session_store.set(phone, POST_ACCION, vendedor=vendedor)
-        if pedido:
-            return (
-                "📋 *Último pedido:*\n"
-                f"ID: {pedido.get('ID','?')} | Producto: {pedido.get('Nombre_Producto','?')}\n"
-                f"Cantidad: {pedido.get('Cantidad','?')} | Total: ${pedido.get('Subtotal','?')}\n"
-                f"Estado: {pedido.get('Estado','?')}"
-                + _post_prompt()
-            )
-        return "No tenés pedidos registrados." + _post_prompt()
+        return _catalogo_texto(filtrados or productos)
 
     if accion == "pago":
         session_store.set(phone, PAGO_MONTO, vendedor=vendedor)
@@ -297,39 +267,58 @@ def _ejecutar_accion(
         session_store.set(phone, POST_ACCION, vendedor=vendedor)
         return f"💳 Tu saldo acumulado: *${saldo:.2f}*" + _post_prompt()
 
+    if accion == "mis_pedidos":
+        pedidos = sheets_client.get_ultimos_pedidos(vendedor, limite=5)
+        session_store.set(phone, POST_ACCION, vendedor=vendedor)
+        if not pedidos:
+            return "No tenés pedidos registrados." + _post_prompt()
+        lines = ["📋 *Tus últimos pedidos:*\n"]
+        for p in pedidos:
+            lines.append(
+                f"• {p.get('ID_Pedido','?')} | {p.get('Nombre_Producto','?')} "
+                f"x{p.get('Cantidad','?')} | ${p.get('Total','?')} | {p.get('Estado','?')}"
+            )
+        return "\n".join(lines) + _post_prompt()
+
     if accion == "ranking":
         rank = sheets_client.get_ranking_vendedora(vendedor)
         session_store.set(phone, POST_ACCION, vendedor=vendedor)
         if rank:
             return (
                 "🏆 *Tu ranking:*\n"
-                f"Posición: #{rank.get('Posicion','?')}\n"
-                f"Ventas: ${rank.get('Total_Ventas','?')} | Puntos: {rank.get('Puntos','?')}"
+                f"Posición: #{rank.get('Posición_Semana','?')}\n"
+                f"Categoría: {rank.get('Categoría','?')}\n"
+                f"Ventas semana: ${rank.get('Ventas_Semana','?')} | Mes: ${rank.get('Ventas_Mes','?')}"
                 + _post_prompt()
             )
         return "No tenés datos de ranking aún." + _post_prompt()
 
     if accion == "ia":
         session_store.set(phone, CONSULTA_IA, vendedor=vendedor)
-        return "🤖 *Consulta técnica*\n¿Cuál es tu pregunta sobre EPP o construcción?"
+        return (
+            "🤖 *Asistente Técnico CUBOCRAFT*\n"
+            "Escribí tu consulta técnica y te respondo al toque.\n\n"
+            "Ejemplos:\n"
+            "- ¿Qué casco usar en trabajos eléctricos?\n"
+            "- ¿Cuántos bolsones de cemento para 20m²?\n"
+            "- ¿Cómo impermeabilizar una terraza?"
+        )
+
+    if accion == "supervisor":
+        nombre = vendedor.get("Nombre", "?")
+        tel = vendedor.get("Teléfono", "?")
+        whatsapp_client.notificar_supervisora(
+            f"📣 {nombre} ({tel}) quiere hablar con el supervisor."
+        )
+        session_store.set(phone, POST_ACCION, vendedor=vendedor)
+        return "✅ Le avisé al supervisor. Te va a contactar pronto." + _post_prompt()
 
     if accion == "baja":
         session_store.set(phone, BAJA_CONFIRMAR, vendedor=vendedor)
-        return "⚠️ ¿Confirmás que querés solicitar la baja? (SI / NO)"
-
-    if accion == "ayuda":
-        session_store.set(phone, POST_ACCION, vendedor=vendedor)
-        return (
-            "ℹ️ *Ayuda CUBOCRAFT*\n"
-            "• Pedidos: opción 1\n"
-            "• Consultas técnicas (EPP, construcción): opción 6\n"
-            "• Escribí *menu* en cualquier momento para volver\n"
-            "• Podés preguntar directamente sin elegir opción"
-            + _post_prompt()
-        )
+        return "⚠️ ¿Confirmás que querés solicitar la baja o pausa? (SI / NO)"
 
     session_store.set(phone, MENU, vendedor=vendedor)
-    return "Opción no reconocida.\n\n" + _menu_texto(perfil, es_supervisor)
+    return "Opción no reconocida.\n\n" + _menu_texto(empresa, es_supervisor)
 
 
 # ── Panel supervisor ──────────────────────────────────────────────────────────
@@ -382,15 +371,19 @@ def _handle_super_candidatas(phone: str, texto: str, vendedor: dict) -> str:
 # ── Flujo PEDIDO ──────────────────────────────────────────────────────────────
 
 def _handle_pedido_catalogo(phone: str, texto: str, vendedor: dict) -> str:
+    session = session_store.get(phone)
+    empresa = session.get("empresa", "CUBO")
+    apertura = "EPP" if empresa == "CUBO" else "MC"
+
     if texto.strip().upper() == "LISTO":
-        return _cerrar_pedido(phone, vendedor, session_store.get(phone))
+        return _cerrar_pedido(phone, vendedor, session)
 
     producto = sheets_client.get_producto_by_id(texto.strip())
     if not producto:
         productos = sheets_client.get_productos_activos()
-        return f"ID '{texto}' no encontrado.\n\n" + _catalogo_texto(productos)
+        filtrados = [p for p in productos if str(p.get("Apertura", "")).upper() == apertura]
+        return f"ID '{texto}' no encontrado.\n\n" + _catalogo_texto(filtrados or productos)
 
-    session = session_store.get(phone)
     session_store.set(phone, PEDIDO_CANTIDAD, vendedor=vendedor,
                       carrito=session.get("carrito", []),
                       producto_seleccionado=producto)
@@ -441,6 +434,8 @@ def _handle_pedido_cantidad(phone: str, texto: str, vendedor: dict) -> str:
 
 def _handle_pedido_confirmar(phone: str, t: str, vendedor: dict) -> str:
     session = session_store.get(phone)
+    empresa = session.get("empresa", "CUBO")
+    apertura = "EPP" if empresa == "CUBO" else "MC"
 
     if t == "listo":
         return _cerrar_pedido(phone, vendedor, session)
@@ -453,21 +448,24 @@ def _handle_pedido_confirmar(phone: str, t: str, vendedor: dict) -> str:
             "descuento_pct": session.get("descuento_seleccionado", 0),
             "campana": session.get("campana_seleccionada"),
         })
+        productos = sheets_client.get_productos_activos()
+        filtrados = [p for p in productos if str(p.get("Apertura", "")).upper() == apertura]
         session_store.set(phone, PEDIDO_CATALOGO, vendedor=vendedor,
                           carrito=carrito, producto_seleccionado=None)
         resumen = "\n".join(
             f"  • {i['producto'].get('Nombre','?')} x{i['cantidad']}" for i in carrito
         )
-        productos = sheets_client.get_productos_activos()
         return (
             f"✅ Agregado al carrito ({len(carrito)} item/s):\n{resumen}\n\n"
-            + _catalogo_texto(productos)
+            + _catalogo_texto(filtrados or productos)
         )
 
     if t == "no":
+        productos = sheets_client.get_productos_activos()
+        filtrados = [p for p in productos if str(p.get("Apertura", "")).upper() == apertura]
         session_store.set(phone, PEDIDO_CATALOGO, vendedor=vendedor,
                           carrito=session.get("carrito", []))
-        return "Item cancelado.\n\n" + _catalogo_texto(sheets_client.get_productos_activos())
+        return "Item cancelado.\n\n" + _catalogo_texto(filtrados or productos)
 
     return "Respondé SI, NO o LISTO."
 
@@ -604,26 +602,24 @@ def _handle_baja_confirmar(phone: str, t: str, vendedor: dict) -> str:
 
 # ── Consulta IA ───────────────────────────────────────────────────────────────
 
-def _handle_consulta_ia(phone: str, texto: str, vendedor: dict, perfil: str) -> str:
+def _handle_consulta_ia(phone: str, texto: str, vendedor: dict) -> str:
+    session = session_store.get(phone)
+    empresa = session.get("empresa", "CUBO")
     if not texto:
         return "¿Cuál es tu consulta técnica?"
-    respuesta = procesar_consulta_ia(texto, perfil)
+    respuesta = procesar_consulta_ia(texto, empresa)
     session_store.set(phone, POST_ACCION, vendedor=vendedor)
     return f"🤖 {respuesta}" + _post_prompt()
 
 
 # ── Post acción ───────────────────────────────────────────────────────────────
 
-def _handle_post_accion(
-    phone: str,
-    t: str,
-    vendedor: dict,
-    perfil: str,
-    es_supervisor: bool,
-) -> str:
+def _handle_post_accion(phone: str, t: str, vendedor: dict, es_supervisor: bool) -> str:
+    session = session_store.get(phone)
+    empresa = session.get("empresa", "CUBO")
     if t == "1":
         session_store.set(phone, MENU, vendedor=vendedor)
-        return _menu_texto(perfil, es_supervisor)
+        return _menu_texto(empresa, es_supervisor)
     if t == "2":
         session_store.clear(phone)
         return f"¡Hasta pronto, {vendedor.get('Nombre', '')}! 👋"
