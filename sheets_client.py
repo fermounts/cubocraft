@@ -24,8 +24,9 @@ METODOS: dict[str, str] = {
 _gc: gspread.Client | None = None
 
 
-def _load_creds_data(value: str) -> dict:
-    """Acepta ruta a archivo .json o JSON inline como string."""
+def _load_creds_data(value: str | None) -> dict:
+    if not value:
+        raise RuntimeError("GOOGLE_CREDS_JSON no está configurado en las variables de entorno.")
     value = value.strip()
     if value.endswith(".json") and os.path.isfile(value):
         with open(value) as f:
