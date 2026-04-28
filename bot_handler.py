@@ -1,6 +1,7 @@
 import logging
 
-import anthropic
+from google import genai
+from google.genai import types as genai_types
 
 import config
 import session_store
@@ -62,14 +63,14 @@ _MENU_MAP: dict[str, str] = {
 
 _COMANDOS_CONTROL = {"si", "sí", "no", "listo", "fin"}
 
-_ai_client: anthropic.Anthropic | None = None
+_gemini_client: genai.Client | None = None
 
 
-def _get_ai_client() -> anthropic.Anthropic:
-    global _ai_client
-    if _ai_client is None:
-        _ai_client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
-    return _ai_client
+def _get_gemini_client() -> genai.Client:
+    global _gemini_client
+    if _gemini_client is None:
+        _gemini_client = genai.Client(api_key=config.GEMINI_API_KEY)
+    return _gemini_client
 
 
 # ── Renders reutilizables ─────────────────────────────────────────────────────
@@ -181,20 +182,23 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
         f"Conocimiento técnico disponible:\n{ctx}"
     )
     try:
-        resp = _get_ai_client().messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=300,
-            system=[{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}],
-            messages=[{"role": "user", "content": texto_usuario}],
+        resp = _get_gemini_client().models.generate_content(
+            model="gemini-1.5-flash",
+            contents=texto_usuario,
+            config=genai_types.GenerateContentConfig(
+                system_instruction=system_text,
+                max_output_tokens=300,
+            ),
         )
-        return resp.content[0].text
-    except anthropic.AuthenticationError:
-        logger.error("Anthropic AuthenticationError")
-        return "Error de autenticación con IA. Contactá al administrador."
-    except anthropic.RateLimitError:
-        logger.warning("Anthropic RateLimitError")
-        return "Servicio de IA temporalmente no disponible. Intentá en unos minutos."
+        return resp.text
     except Exception as e:
+        msg = str(e).lower()
+        if any(k in msg for k in ("api key", "authentication", "permission denied", "unauthenticated")):
+            logger.error("Gemini auth error: %s", e)
+            return "Error de autenticación con IA. Contactá al administrador."
+        if any(k in msg for k in ("quota", "resource exhausted", "rate limit")):
+            logger.warning("Gemini rate limit: %s", e)
+            return "Servicio de IA temporalmente no disponible. Intentá en unos minutos."
         logger.error("Error en consulta IA: %s", e)
         return "No pude procesar tu consulta. Intentá de nuevo."
 
