@@ -191,7 +191,7 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
     )
     try:
         resp = _get_gemini_client().models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             contents=texto_usuario,
             config=genai_types.GenerateContentConfig(
                 system_instruction=system_text,
