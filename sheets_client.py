@@ -44,6 +44,8 @@ def _get_client() -> gspread.Client:
 
 
 def _get_sheet(name: str) -> gspread.Worksheet:
+    if not config.GOOGLE_SHEET_ID:
+        raise RuntimeError("GOOGLE_SHEET_ID no está configurado en las variables de entorno.")
     return _get_client().open_by_key(config.GOOGLE_SHEET_ID).worksheet(name)
 
 
@@ -75,13 +77,15 @@ def get_vendedora_by_phone(phone: str) -> dict | None:
 def get_productos_por_categoria(categoria: str, empresa: str) -> list[dict]:  # noqa: ARG001
     try:
         ws = _get_sheet("PRODUCTOS")
-        return [
+        resultado = [
             r for r in ws.get_all_records()
             if str(r.get("Apertura", "")).strip() == categoria
             and str(r.get("Activo", "")).upper() in ("SI", "1", "TRUE", "VERDADERO")
         ]
+        logger.debug("get_productos_por_categoria(%r) → %d productos", categoria, len(resultado))
+        return resultado
     except Exception as e:
-        logger.error("get_productos_por_categoria error: %s", e)
+        logger.error("get_productos_por_categoria error categoria=%r: %s", categoria, e)
         return []
 
 
