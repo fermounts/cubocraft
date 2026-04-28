@@ -1,4 +1,5 @@
 import logging
+import os
 
 from google import genai
 from google.genai import types as genai_types
@@ -69,7 +70,14 @@ _gemini_client: genai.Client | None = None
 def _get_gemini_client() -> genai.Client:
     global _gemini_client
     if _gemini_client is None:
-        _gemini_client = genai.Client(api_key=config.GEMINI_API_KEY)
+        # Leer fresh desde env para no depender del valor congelado al importar config
+        api_key = config.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY", "")
+        prefix = (api_key[:4] + "...") if api_key else "(vacía)"
+        logger.info("GEMINI_API_KEY prefix=%s len=%d", prefix, len(api_key))
+        if not api_key:
+            logger.error("GEMINI_API_KEY no está configurada — verificá la variable en Render")
+            raise RuntimeError("GEMINI_API_KEY no configurada")
+        _gemini_client = genai.Client(api_key=api_key)
     return _gemini_client
 
 
@@ -191,9 +199,13 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
             ),
         )
         return resp.text
+    except RuntimeError as e:
+        # Clave ausente — diagnosticado en _get_gemini_client()
+        logger.error("Gemini config error: %s", e)
+        return "Error de autenticación con IA. Contactá al administrador."
     except Exception as e:
         msg = str(e).lower()
-        if any(k in msg for k in ("api key", "authentication", "permission denied", "unauthenticated")):
+        if any(k in msg for k in ("api key", "api_key", "authentication", "permission denied", "unauthenticated", "invalid")):
             logger.error("Gemini auth error: %s", e)
             return "Error de autenticación con IA. Contactá al administrador."
         if any(k in msg for k in ("quota", "resource exhausted", "rate limit")):
