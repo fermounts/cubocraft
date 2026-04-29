@@ -317,3 +317,121 @@ def get_conocimiento_tecnico() -> list[dict]:
     except Exception as e:
         logger.error("get_conocimiento_tecnico error: %s", e)
         return []
+
+
+# ── RAG: hojas de validación ──────────────────────────────────────────────────
+
+_HEADERS_PENDIENTES = [
+    "ID", "FECHA", "PREGUNTA", "RESPUESTA_DADA",
+    "FUENTE", "ESTADO", "RESPUESTA_CORREGIDA", "VALIDADO_POR",
+]
+_HEADERS_BASE_CONOCIMIENTO = [
+    "ID", "CATEGORIA", "PREGUNTA", "RESPUESTA_VALIDADA",
+    "FUENTE_ORIGINAL", "VALIDADO_POR", "FECHA_VALIDACION",
+]
+
+
+def _ensure_sheet(name: str, headers: list[str]) -> gspread.Worksheet:
+    if not config.GOOGLE_SHEET_ID:
+        raise RuntimeError("GOOGLE_SHEET_ID no está configurado.")
+    spreadsheet = _get_client().open_by_key(config.GOOGLE_SHEET_ID)
+    try:
+        return spreadsheet.worksheet(name)
+    except gspread.WorksheetNotFound:
+        ws = spreadsheet.add_worksheet(title=name, rows=1000, cols=len(headers))
+        ws.append_row(headers)
+        logger.info("Hoja creada: %s", name)
+        return ws
+
+
+def _similitud(query: str, stored: str) -> float:
+    """Fracción de palabras significativas del query presentes en stored."""
+    palabras_q = {w for w in query.lower().split() if len(w) > 3}
+    if not palabras_q:
+        return 0.0
+    palabras_s = set(stored.lower().split())
+    return len(palabras_q & palabras_s) / len(palabras_q)
+
+
+def buscar_en_base_conocimiento(pregunta: str) -> dict | None:
+    try:
+        ws = _ensure_sheet("BASE_CONOCIMIENTO", _HEADERS_BASE_CONOCIMIENTO)
+        mejor: dict | None = None
+        mejor_sim = 0.0
+        for r in ws.get_all_records():
+            sim = _similitud(pregunta, str(r.get("PREGUNTA", "")))
+            if sim > mejor_sim:
+                mejor_sim = sim
+                mejor = r
+        if mejor and mejor_sim >= 0.70:
+            logger.info("BASE_CONOCIMIENTO hit sim=%.2f para %r", mejor_sim, pregunta)
+            return mejor
+        return None
+    except Exception as e:
+        logger.error("buscar_en_base_conocimiento error: %s", e)
+        return None
+
+
+def registrar_pendiente_validacion(pregunta: str, respuesta: str, fuente: str) -> str:
+    try:
+        ws = _ensure_sheet("PENDIENTES_VALIDACION", _HEADERS_PENDIENTES)
+        pid = f"PV{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        ws.append_row([
+            pid,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            pregunta,
+            respuesta,
+            fuente,
+            "Pendiente",
+            "",
+            "",
+        ])
+        logger.info("Pendiente registrado: %s", pid)
+        return pid
+    except Exception as e:
+        logger.error("registrar_pendiente_validacion error: %s", e)
+        return "ERROR"
+
+
+def aprobar_pendiente(id_pendiente: str, respuesta_corregida: str, validador: str) -> bool:
+    try:
+        ws_pend = _ensure_sheet("PENDIENTES_VALIDACION", _HEADERS_PENDIENTES)
+        registros = ws_pend.get_all_records()
+        fila_idx: int | None = None
+        registro: dict | None = None
+        for i, r in enumerate(registros, start=2):
+            if str(r.get("ID", "")) == id_pendiente:
+                fila_idx = i
+                registro = r
+                break
+        if fila_idx is None or registro is None:
+            logger.warning("aprobar_pendiente: ID %s no encontrado", id_pendiente)
+            return False
+
+        ws_base = _ensure_sheet("BASE_CONOCIMIENTO", _HEADERS_BASE_CONOCIMIENTO)
+        nueva_id = f"BC{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        ws_base.append_row([
+            nueva_id,
+            "",
+            str(registro.get("PREGUNTA", "")),
+            respuesta_corregida or str(registro.get("RESPUESTA_DADA", "")),
+            str(registro.get("FUENTE", "")),
+            validador,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        ])
+
+        headers = ws_pend.row_values(1)
+        updates = {
+            "ESTADO": "Aprobado",
+            "RESPUESTA_CORREGIDA": respuesta_corregida,
+            "VALIDADO_POR": validador,
+        }
+        for col_name, value in updates.items():
+            if col_name in headers and value:
+                ws_pend.update_cell(fila_idx, headers.index(col_name) + 1, value)
+
+        logger.info("Pendiente %s aprobado → BASE_CONOCIMIENTO %s", id_pendiente, nueva_id)
+        return True
+    except Exception as e:
+        logger.error("aprobar_pendiente error: %s", e)
+        return False

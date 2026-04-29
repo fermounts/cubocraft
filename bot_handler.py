@@ -168,13 +168,31 @@ def _es_pregunta_abierta(texto: str) -> bool:
     return True
 
 
-# ── Consulta IA ───────────────────────────────────────────────────────────────
+# ── Consulta IA (pipeline RAG) ────────────────────────────────────────────────
 
 def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
+    # Paso 1: buscar en BASE_CONOCIMIENTO validada
+    match = sheets_client.buscar_en_base_conocimiento(texto_usuario)
+    if match:
+        logger.info("RAG: respuesta desde BASE_CONOCIMIENTO")
+        return str(match.get("RESPUESTA_VALIDADA", ""))
+
+    # Paso 2: buscar normativas relevantes en CONOCIMIENTO_TECNICO
     conocimiento = sheets_client.get_conocimiento_tecnico()
+    palabras_sig = {w for w in texto_usuario.lower().split() if len(w) > 3}
+    ctx_items = [
+        k for k in conocimiento
+        if any(
+            w in (k.get("Nombre_Norma", "") + " " + k.get("Alcance", "")).lower()
+            for w in palabras_sig
+        )
+    ] if palabras_sig else []
+
+    fuente = "NORMATIVA" if ctx_items else "IA_GENERAL"
+    ctx_fuente = ctx_items if ctx_items else conocimiento
     ctx = "\n".join(
         f"ID: {k.get('ID_Norma','')} | NORMA: {k.get('Nombre_Norma','')} | ALCANCE: {k.get('Alcance','')}"
-        for k in conocimiento
+        for k in ctx_fuente
     ) or "Sin conocimiento técnico cargado."
 
     linea = (
@@ -198,9 +216,8 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
                 max_output_tokens=250,
             ),
         )
-        return resp.text
+        respuesta = resp.text
     except RuntimeError as e:
-        # Clave ausente — diagnosticado en _get_gemini_client()
         logger.error("Gemini config error: %s", e)
         return "Error de autenticación con IA. Contactá al administrador."
     except Exception as e:
@@ -213,6 +230,17 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
             return "Servicio de IA temporalmente no disponible. Intentá en unos minutos."
         logger.error("Error en consulta IA: %s", e)
         return "No pude procesar tu consulta. Intentá de nuevo."
+
+    # Pasos 2 y 3: registrar pendiente y notificar supervisor
+    sheets_client.registrar_pendiente_validacion(texto_usuario, respuesta, fuente)
+    whatsapp_client.notificar_supervisora(
+        f"Nueva consulta sin validar:\n"
+        f"Pregunta: {texto_usuario}\n"
+        f"Respuesta dada: {respuesta}\n"
+        f"Fuente: {fuente}\n"
+        f"Revisa en Google Sheets → PENDIENTES_VALIDACION"
+    )
+    return respuesta
 
 
 # ── Router principal ──────────────────────────────────────────────────────────
