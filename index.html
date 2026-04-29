@@ -3,264 +3,598 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CUBOCRAFT — Soluciones para Construcción</title>
+  <title>CUBOCRAFT — Soluciones técnicas para construcción</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --border: #2a2d3a;
-      --accent: #f5a623;
-      --accent2: #e8521a;
-      --text: #e8eaf0;
-      --muted: #7a7f96;
-      --green: #25d366;
+      --steel:    #4A5568;
+      --navy:     #1E3A5F;
+      --blue:     #1E40AF;
+      --orange:   #F59E0B;
+      --green:    #25D366;
+      --white:    #FFFFFF;
+      --off-white:#F8FAFC;
     }
+
+    html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* ── Header ── */
-    header {
-      width: 100%;
-      padding: 1.5rem 2rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .logo {
-      font-size: 1.6rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-
-    .logo span {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .badge {
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 0.2rem 0.6rem;
-      border-radius: 9999px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    /* ── Hero ── */
-    main {
-      flex: 1;
-      width: 100%;
-      max-width: 680px;
-      padding: 3rem 1.5rem 4rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 2rem;
-    }
-
-    .hero-icon {
-      font-size: 4rem;
-      line-height: 1;
-    }
-
-    h1 {
-      font-size: clamp(1.8rem, 5vw, 2.6rem);
-      font-weight: 800;
-      line-height: 1.15;
-      letter-spacing: -0.5px;
-    }
-
-    h1 em {
-      font-style: normal;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .subtitle {
-      font-size: 1.05rem;
-      color: var(--muted);
-      max-width: 480px;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: var(--white);
       line-height: 1.6;
     }
 
-    /* ── Cards ── */
-    .cards {
+    /* ── Utility ───────────────────────────────────── */
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* WhatsApp SVG icon */
+    .wa-icon {
+      width: 22px; height: 22px; fill: currentColor; flex-shrink: 0;
+    }
+
+    /* Stat blocks shared */
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .stat {
+      text-align: center;
+      padding: 1rem 1.5rem;
+      border-radius: 0.75rem;
+      min-width: 130px;
+    }
+
+    .stat-num {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      margin-top: 0.3rem;
+      opacity: 0.85;
+    }
+
+    /* Feature columns */
+    .features {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 1rem;
       width: 100%;
     }
 
-    @media (max-width: 460px) {
-      .cards { grid-template-columns: 1fr; }
+    @media (max-width: 640px) {
+      .features { grid-template-columns: 1fr; }
     }
 
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 1.4rem 1.2rem;
-      text-align: left;
+    .feature {
+      padding: 1.25rem;
+      border-radius: 0.75rem;
+      text-align: center;
     }
 
-    .card-icon { font-size: 1.6rem; margin-bottom: 0.6rem; display: block; }
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 0.6rem;
+      display: block;
+    }
 
-    .card h3 {
+    .feature h3 {
       font-size: 0.95rem;
       font-weight: 700;
-      margin-bottom: 0.3rem;
-      color: var(--text);
+      margin-bottom: 0.4rem;
     }
 
-    .card p {
+    .feature p {
       font-size: 0.82rem;
-      color: var(--muted);
+      opacity: 0.8;
       line-height: 1.5;
     }
 
-    /* ── CTA ── */
-    .cta-group {
+    /* CTA button */
+    .btn-wa {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 0.9rem 2.2rem;
+      border-radius: 0.75rem;
+      text-decoration: none;
+      transition: filter 0.15s, transform 0.1s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-wa:hover  { filter: brightness(1.12); transform: translateY(-2px); }
+    .btn-wa:active { transform: translateY(0); }
+
+    /* Back button */
+    .btn-back {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.15);
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.3);
+      backdrop-filter: blur(8px);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.55rem 1.2rem;
+      border-radius: 9999px;
+      text-decoration: none;
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      z-index: 100;
+      transition: background 0.15s;
+    }
+
+    .btn-back:hover { background: rgba(255,255,255,0.25); }
+
+    /* ══════════════════════════════════════════════
+       SECCIÓN 1 — HUB
+    ══════════════════════════════════════════════ */
+
+    #hub {
+      min-height: 100vh;
+      background: var(--white);
+      color: #1A202C;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 1.5rem 5rem;
+      gap: 2.5rem;
+      text-align: center;
+    }
+
+    .hub-logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(3rem, 10vw, 5.5rem);
+      font-weight: 800;
+      color: #1E3A5F;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .hub-tagline {
+      font-size: clamp(1rem, 3vw, 1.25rem);
+      color: #4A5568;
+      font-weight: 500;
+      max-width: 420px;
+    }
+
+    .hub-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      width: 100%;
+      max-width: 700px;
+    }
+
+    @media (max-width: 520px) {
+      .hub-cards { grid-template-columns: 1fr; }
+    }
+
+    .hub-card {
+      border-radius: 1.25rem;
+      padding: 2.5rem 1.5rem 2rem;
+      text-align: center;
+      text-decoration: none;
+      color: var(--white);
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 0.75rem;
-      width: 100%;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
     }
 
-    .btn-whatsapp {
-      display: inline-flex;
+    .hub-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+    }
+
+    .hub-card.cubo  { background: var(--steel); }
+    .hub-card.craft { background: var(--navy);  }
+
+    .hub-card-emoji { font-size: 3.5rem; line-height: 1; }
+
+    .hub-card-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.9rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      line-height: 1;
+    }
+
+    .hub-card-sub {
+      font-size: 0.88rem;
+      opacity: 0.85;
+      font-weight: 500;
+    }
+
+    .hub-card-arrow {
+      margin-top: 0.5rem;
+      font-size: 1.4rem;
+      opacity: 0.6;
+    }
+
+    /* ══════════════════════════════════════════════
+       SECCIÓN 2 — CUBO
+    ══════════════════════════════════════════════ */
+
+    #cubo {
+      min-height: 100vh;
+      background: var(--steel);
+      display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 0.6rem;
-      background: var(--green);
-      color: #fff;
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 0.9rem 2rem;
-      border-radius: 0.8rem;
-      text-decoration: none;
-      transition: filter 0.15s, transform 0.1s;
-      width: 100%;
-      max-width: 340px;
-      justify-content: center;
+      padding: 5rem 1.5rem 7rem;
+      gap: 2.5rem;
+      text-align: center;
     }
 
-    .btn-whatsapp:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .btn-whatsapp:active { transform: translateY(0); }
-
-    .btn-whatsapp svg { width: 22px; height: 22px; fill: #fff; flex-shrink: 0; }
-
-    .cta-note {
-      font-size: 0.78rem;
-      color: var(--muted);
+    .cubo-header h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(2.2rem, 7vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      line-height: 1.05;
     }
 
-    /* ── Normas ── */
-    .normas {
+    .cubo-header h2 span { color: #60A5FA; }
+
+    .cubo-header p {
+      margin-top: 0.6rem;
+      font-size: 1.05rem;
+      opacity: 0.85;
+      font-style: italic;
+    }
+
+    .cubo-features .feature  { background: rgba(255,255,255,0.08); }
+
+    .cubo-stats .stat        { background: rgba(30,64,175,0.35); border: 1px solid rgba(96,165,250,0.3); }
+    .cubo-stats .stat-num    { color: #93C5FD; }
+
+    .cubo-normas {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
       justify-content: center;
+      gap: 0.5rem;
     }
 
-    .tag {
+    .cubo-normas .tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: rgba(96,165,250,0.15);
+      border: 1px solid rgba(96,165,250,0.35);
+      color: #93C5FD;
+      letter-spacing: 0.04em;
+    }
+
+    .btn-wa.cubo-btn {
+      background: var(--blue);
+      color: var(--white);
+      box-shadow: 0 4px 20px rgba(30,64,175,0.5);
+    }
+
+    /* ══════════════════════════════════════════════
+       SECCIÓN 3 — CRAFT
+    ══════════════════════════════════════════════ */
+
+    #craft {
+      min-height: 100vh;
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 5rem 1.5rem 7rem;
+      gap: 2.5rem;
+      text-align: center;
+    }
+
+    .craft-header h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(2.2rem, 7vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      line-height: 1.05;
+    }
+
+    .craft-header h2 span { color: var(--orange); }
+
+    .craft-header p {
+      margin-top: 0.6rem;
+      font-size: 1.05rem;
+      opacity: 0.85;
+      font-style: italic;
+    }
+
+    .craft-features .feature { background: rgba(255,255,255,0.07); }
+
+    .craft-stats .stat       { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); }
+    .craft-stats .stat-num   { color: var(--orange); }
+
+    .craft-normas {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .craft-normas .tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.75rem;
+      border-radius: 9999px;
+      background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.35);
+      color: var(--orange);
+      letter-spacing: 0.04em;
+    }
+
+    .btn-wa.craft-btn {
+      background: var(--orange);
+      color: #1A202C;
+      box-shadow: 0 4px 20px rgba(245,158,11,0.45);
+    }
+
+    /* ══════════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════════ */
+
+    footer {
+      background: var(--white);
+      color: #4A5568;
+      text-align: center;
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .footer-logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--navy);
+    }
+
+    .footer-normas {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.4rem;
+    }
+
+    .footer-normas span {
       font-size: 0.72rem;
       font-weight: 600;
-      padding: 0.25rem 0.6rem;
+      padding: 0.2rem 0.6rem;
       border-radius: 9999px;
-      background: rgba(245, 166, 35, 0.08);
-      border: 1px solid rgba(245, 166, 35, 0.25);
-      color: var(--accent);
-      letter-spacing: 0.03em;
+      background: #EDF2F7;
+      color: #4A5568;
     }
 
-    /* ── Footer ── */
-    footer {
-      width: 100%;
-      padding: 1.25rem 2rem;
-      border-top: 1px solid var(--border);
-      text-align: center;
-      font-size: 0.75rem;
-      color: var(--muted);
+    .footer-copy {
+      font-size: 0.78rem;
+      color: #A0AEC0;
     }
+
+    /* ══════════════════════════════════════════════
+       Sección visibility observer para btn-back
+    ══════════════════════════════════════════════ */
+
+    #btn-back-cubo, #btn-back-craft { display: none; }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="logo"><span>CUBOCRAFT</span> 🧱</div>
-    <span class="badge">Bot WhatsApp</span>
-  </header>
+<!-- ══════════════════════════════════════════
+     SECCIÓN 1 — HUB CENTRAL
+══════════════════════════════════════════ -->
+<section id="hub">
+  <div class="hub-logo">CUBOCRAFT</div>
+  <p class="hub-tagline">Soluciones técnicas para construcción</p>
 
-  <main>
-    <div class="hero-icon">🏗️</div>
+  <div class="hub-cards">
+    <a class="hub-card cubo" href="#cubo">
+      <span class="hub-card-emoji">🦺</span>
+      <div class="hub-card-title">CUBO</div>
+      <div class="hub-card-sub">Seguridad e Higiene<br>EPP certificado</div>
+      <div class="hub-card-arrow">↓</div>
+    </a>
+    <a class="hub-card craft" href="#craft">
+      <span class="hub-card-emoji">🧱</span>
+      <div class="hub-card-title">CRAFT</div>
+      <div class="hub-card-sub">Métodos Constructivos<br>Materiales técnicos</div>
+      <div class="hub-card-arrow">↓</div>
+    </a>
+  </div>
+</section>
 
-    <h1>Soluciones para<br><em>construcción inteligente</em></h1>
+<!-- ══════════════════════════════════════════
+     SECCIÓN 2 — CUBO
+══════════════════════════════════════════ -->
+<section id="cubo">
+  <div class="cubo-header">
+    <h2><span>CUBO</span> — Seguridad e Higiene</h2>
+    <p>EPP certificado. Obra segura.</p>
+  </div>
 
-    <p class="subtitle">
-      Gestioná pedidos, consultá normativas y calculá materiales directamente
-      desde WhatsApp. EPP certificado y métodos constructivos al alcance de tu mano.
-    </p>
-
-    <div class="cards">
-      <div class="card">
-        <span class="card-icon">🦺</span>
-        <h3>Seguridad e Higiene</h3>
-        <p>Cascos IRAM 3620, calzado IRAM 3610, arneses y EPP certificado SRT 299/11.</p>
-      </div>
-      <div class="card">
-        <span class="card-icon">🧱</span>
-        <h3>Métodos Constructivos</h3>
-        <p>Morteros, adhesivos, cálculos según CIRSOC 201 e IRAM 1597. Asesoría técnica IA.</p>
-      </div>
+  <div class="features cubo-features">
+    <div class="feature">
+      <span class="feature-icon">🛡️</span>
+      <h3>Productos EPP</h3>
+      <p>Cascos, calzado, guantes, arneses y protección respiratoria certificados.</p>
     </div>
-
-    <div class="cta-group">
-      <a
-        class="btn-whatsapp"
-        href="https://wa.me/5491100000000?text=Hola%20CUBOCRAFT"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-        </svg>
-        Contactar por WhatsApp
-      </a>
-      <span class="cta-note">Respondemos al instante — bot activo 24/7</span>
+    <div class="feature">
+      <span class="feature-icon">📋</span>
+      <h3>Normativas IRAM</h3>
+      <p>Cumplimiento IRAM 3620 · 3627 · 3649 y resolución SRT 299/11.</p>
     </div>
-
-    <div class="normas">
-      <span class="tag">IRAM 3620</span>
-      <span class="tag">IRAM 3610</span>
-      <span class="tag">SRT 299/11</span>
-      <span class="tag">CIRSOC 201</span>
-      <span class="tag">IRAM 1597</span>
+    <div class="feature">
+      <span class="feature-icon">🤖</span>
+      <h3>Asesor técnico 24/7</h3>
+      <p>Consultas por WhatsApp respondidas al instante con IA especializada.</p>
     </div>
-  </main>
+  </div>
 
-  <footer>
-    © 2025 CUBOCRAFT · Soluciones para construcción · Powered by IA
-  </footer>
+  <div class="stats cubo-stats">
+    <div class="stat">
+      <div class="stat-num">40+</div>
+      <div class="stat-label">Productos certificados</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">8</div>
+      <div class="stat-label">Categorías EPP</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">24/7</div>
+      <div class="stat-label">Asesoría técnica</div>
+    </div>
+  </div>
+
+  <div class="cubo-normas">
+    <span class="tag">IRAM 3620</span>
+    <span class="tag">IRAM 3627</span>
+    <span class="tag">IRAM 3649</span>
+    <span class="tag">SRT 299/11</span>
+  </div>
+
+  <a
+    class="btn-wa cubo-btn"
+    href="https://wa.me/5491134912395?text=Hola,%20quiero%20info%20sobre%20EPP%20de%20seguridad"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <svg class="wa-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+    Consultá por WhatsApp — CUBO
+  </a>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 3 — CRAFT
+══════════════════════════════════════════ -->
+<section id="craft">
+  <div class="craft-header">
+    <h2><span>CRAFT</span> — Métodos Constructivos</h2>
+    <p>Materiales y métodos para construir mejor.</p>
+  </div>
+
+  <div class="features craft-features">
+    <div class="feature">
+      <span class="feature-icon">🧱</span>
+      <h3>Productos técnicos</h3>
+      <p>Morteros, adhesivos, impermeabilizantes y materiales de construcción de calidad.</p>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">📐</span>
+      <h3>Calculadora de obra</h3>
+      <p>Calculá rendimientos, proporciones y cantidades por WhatsApp, al instante.</p>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">🤖</span>
+      <h3>Asesor IA 24/7</h3>
+      <p>Consultas técnicas sobre CIRSOC 201 e IRAM respondidas por IA especializada.</p>
+    </div>
+  </div>
+
+  <div class="stats craft-stats">
+    <div class="stat">
+      <div class="stat-num">40+</div>
+      <div class="stat-label">Productos técnicos</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">6</div>
+      <div class="stat-label">Categorías</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">24/7</div>
+      <div class="stat-label">Asesor IA</div>
+    </div>
+  </div>
+
+  <div class="craft-normas">
+    <span class="tag">CIRSOC 201</span>
+    <span class="tag">IRAM 1597</span>
+    <span class="tag">SRT</span>
+  </div>
+
+  <a
+    class="btn-wa craft-btn"
+    href="https://wa.me/5491134912395?text=Hola,%20quiero%20info%20sobre%20m%C3%A9todos%20constructivos"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <svg class="wa-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+    Consultá por WhatsApp — CRAFT
+  </a>
+</section>
+
+<!-- ══════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════ -->
+<footer>
+  <div class="footer-logo">CUBOCRAFT</div>
+  <div class="footer-normas">
+    <span>IRAM</span>
+    <span>CIRSOC</span>
+    <span>SRT</span>
+  </div>
+  <p class="footer-copy">CUBOCRAFT © 2026 &nbsp;·&nbsp; Powered by IA 🤖</p>
+</footer>
+
+<!-- Botón ↑ Volver (aparece en CUBO y CRAFT) -->
+<a class="btn-back" id="btn-back-cubo"  href="#hub">↑ Volver al inicio</a>
+<a class="btn-back" id="btn-back-craft" href="#hub">↑ Volver al inicio</a>
+
+<script>
+  // Mostrar/ocultar botón "Volver" según sección visible
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(({ target, isIntersecting }) => {
+        const id = target.id;
+        if (id === 'cubo' || id === 'craft') {
+          const btn = document.getElementById('btn-back-' + id);
+          btn.style.display = isIntersecting ? 'inline-flex' : 'none';
+        }
+      });
+    },
+    { threshold: 0.15 }
+  );
+
+  ['cubo', 'craft'].forEach(id => observer.observe(document.getElementById(id)));
+</script>
 
 </body>
 </html>
