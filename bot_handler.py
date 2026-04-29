@@ -180,9 +180,22 @@ def _detectar_fuente(respuesta: str) -> str:
 
 
 def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
-    # Leer contexto completo desde Sheets
-    base = sheets_client.get_base_conocimiento()
-    normativas = sheets_client.get_conocimiento_tecnico()
+    # Leer contexto RAG desde Sheets
+    logger.info("RAG: leyendo BASE_CONOCIMIENTO...")
+    try:
+        base = sheets_client.get_base_conocimiento()
+        logger.info("RAG: base_conocimiento=%d registros", len(base))
+    except Exception:
+        logger.exception("RAG: fallo al leer BASE_CONOCIMIENTO — se continúa sin base")
+        base = []
+
+    logger.info("RAG: leyendo CONOCIMIENTO_TECNICO...")
+    try:
+        normativas = sheets_client.get_conocimiento_tecnico()
+        logger.info("RAG: normativas=%d registros", len(normativas))
+    except Exception:
+        logger.exception("RAG: fallo al leer CONOCIMIENTO_TECNICO — se continúa sin normativas")
+        normativas = []
 
     ctx_base = "\n".join(
         f"P: {r.get('PREGUNTA','')} | R: {r.get('RESPUESTA_VALIDADA','')} | Cat: {r.get('CATEGORIA','')}"
@@ -210,6 +223,8 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
         f"=== RESPUESTAS VALIDADAS CUBOCRAFT ===\n{ctx_base}\n\n"
         f"=== NORMATIVAS TÉCNICAS ===\n{ctx_norm}"
     )
+
+    logger.info("RAG: iniciando consulta Gemini — empresa=%s pregunta=%r", empresa, texto_usuario[:80])
     try:
         resp = _get_gemini_client().models.generate_content(
             model="gemini-2.5-flash",
@@ -220,23 +235,31 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
             ),
         )
         respuesta = resp.text
+        logger.info("RAG: Gemini respondió — len=%d", len(respuesta or ""))
     except RuntimeError as e:
-        logger.error("Gemini config error: %s", e)
+        logger.exception("Gemini config error (API key o cliente): %s", e)
         return "Error de autenticación con IA. Contactá al administrador."
     except Exception as e:
         msg = str(e).lower()
         if any(k in msg for k in ("api key", "api_key", "authentication", "permission denied", "unauthenticated", "invalid")):
-            logger.error("Gemini auth error: %s", e)
+            logger.exception("Gemini auth error: %s", e)
             return "Error de autenticación con IA. Contactá al administrador."
         if any(k in msg for k in ("quota", "resource exhausted", "rate limit")):
-            logger.warning("Gemini rate limit: %s", e)
+            logger.exception("Gemini rate limit / quota: %s", e)
             return "Servicio de IA temporalmente no disponible. Intentá en unos minutos."
-        logger.error("Error en consulta IA: %s", e)
+        logger.exception("Gemini error inesperado: %s", e)
+        return "No pude procesar tu consulta. Intentá de nuevo."
+
+    if not respuesta:
+        logger.error("RAG: Gemini devolvió respuesta vacía o None — resp=%r", resp)
         return "No pude procesar tu consulta. Intentá de nuevo."
 
     fuente = _detectar_fuente(respuesta)
-    sheets_client.registrar_pendiente(texto_usuario, respuesta, fuente)
-    logger.info("RAG: pendiente registrado fuente=%s", fuente)
+    logger.info("RAG: registrando pendiente fuente=%s", fuente)
+    try:
+        sheets_client.registrar_pendiente(texto_usuario, respuesta, fuente)
+    except Exception:
+        logger.exception("RAG: fallo al registrar pendiente — se devuelve respuesta igual")
     return respuesta
 
 
