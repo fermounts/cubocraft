@@ -411,7 +411,62 @@
     ══════════════════════════════════════════════ */
 
     #btn-back-cubo, #btn-back-craft { display: none; }
-  </style>
+
+    /* ══════════════════════════════════════════════
+       UOCRA corner badge
+    ══════════════════════════════════════════════ */
+
+    @keyframes letterDrop {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .uocra-badge {
+      position: fixed;
+      bottom: 1.1rem;
+      right: 1.2rem;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1px;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .uocra-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.6rem;
+      font-weight: 500;
+      color: #A0AEC0;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: letterDrop 0.4s ease forwards;
+      animation-delay: 0.2s;
+    }
+
+    .uocra-word {
+      display: flex;
+      gap: 1px;
+    }
+
+    .uocra-word .l {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #CBD5E0;
+      letter-spacing: 0.05em;
+      opacity: 0;
+      animation: letterDrop 0.35s ease forwards;
+    }
+
+    /* staggered delays — U O C R A */
+    .uocra-word .l:nth-child(1) { animation-delay: 0.5s; }
+    .uocra-word .l:nth-child(2) { animation-delay: 0.72s; }
+    .uocra-word .l:nth-child(3) { animation-delay: 0.94s; }
+    .uocra-word .l:nth-child(4) { animation-delay: 1.16s; }
+    .uocra-word .l:nth-child(5) { animation-delay: 1.38s; }
 </head>
 <body>
 
@@ -573,6 +628,18 @@
   </div>
   <p class="footer-copy">CUBOCRAFT © 2026 &nbsp;·&nbsp; Powered by IA 🤖</p>
 </footer>
+
+<!-- UOCRA corner badge -->
+<div class="uocra-badge" aria-hidden="true">
+  <span class="uocra-label">powered by</span>
+  <div class="uocra-word">
+    <span class="l">U</span>
+    <span class="l">O</span>
+    <span class="l">C</span>
+    <span class="l">R</span>
+    <span class="l">A</span>
+  </div>
+</div>
 
 <!-- Botón ↑ Volver (aparece en CUBO y CRAFT) -->
 <a class="btn-back" id="btn-back-cubo"  href="#hub">↑ Volver al inicio</a>
