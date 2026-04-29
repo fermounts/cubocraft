@@ -1,9 +1,13 @@
 import logging
 import os
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 from flask import Flask, jsonify, request, send_from_directory
+import pytz
 
 import bot_handler
+import sheets_client
 import whatsapp_client
 
 logging.basicConfig(
@@ -13,6 +17,37 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+
+# ── Resumen diario al supervisor ──────────────────────────────────────────────
+
+def _enviar_resumen_diario() -> None:
+    try:
+        pendientes = sheets_client.get_pendientes_del_dia()
+        total = len(pendientes)
+        sin_validar = sum(1 for p in pendientes if str(p.get("ESTADO", "")).lower() == "pendiente")
+        mensaje = (
+            f"CUBOCRAFT — Resumen del dia\n"
+            f"Consultas tecnicas nuevas: {total}\n"
+            f"Pendientes de validar: {sin_validar}\n"
+            f"Revisa y valida en Google Sheets → PENDIENTES_VALIDACION"
+        )
+        whatsapp_client.notificar_supervisora(mensaje)
+        logger.info("Resumen diario enviado: total=%d sin_validar=%d", total, sin_validar)
+    except Exception as e:
+        logger.error("Error enviando resumen diario: %s", e)
+
+
+_tz_arg = pytz.timezone("America/Argentina/Buenos_Aires")
+_scheduler = BackgroundScheduler(timezone=_tz_arg)
+_scheduler.add_job(
+    _enviar_resumen_diario,
+    CronTrigger(hour=20, minute=0, timezone=_tz_arg),
+    id="resumen_diario",
+    replace_existing=True,
+)
+_scheduler.start()
+logger.info("Scheduler iniciado — resumen diario a las 20:00 Argentina")
 
 
 def _extract_twilio(req):

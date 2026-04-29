@@ -5,6 +5,7 @@ google-auth
 google-genai
 python-dotenv
 apscheduler
+pytz
 Pillow
 pytesseract
 requests

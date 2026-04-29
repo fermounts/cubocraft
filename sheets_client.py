@@ -393,6 +393,29 @@ def registrar_pendiente_validacion(pregunta: str, respuesta: str, fuente: str) -
         return "ERROR"
 
 
+def get_base_conocimiento() -> list[dict]:
+    try:
+        ws = _ensure_sheet("BASE_CONOCIMIENTO", _HEADERS_BASE_CONOCIMIENTO)
+        return ws.get_all_records()
+    except Exception as e:
+        logger.error("get_base_conocimiento error: %s", e)
+        return []
+
+
+def registrar_pendiente(pregunta: str, respuesta: str, fuente: str) -> str:
+    return registrar_pendiente_validacion(pregunta, respuesta, fuente)
+
+
+def get_pendientes_del_dia() -> list[dict]:
+    try:
+        ws = _ensure_sheet("PENDIENTES_VALIDACION", _HEADERS_PENDIENTES)
+        hoy = date.today().isoformat()
+        return [r for r in ws.get_all_records() if str(r.get("FECHA", "")).startswith(hoy)]
+    except Exception as e:
+        logger.error("get_pendientes_del_dia error: %s", e)
+        return []
+
+
 def aprobar_pendiente(id_pendiente: str, respuesta_corregida: str, validador: str) -> bool:
     try:
         ws_pend = _ensure_sheet("PENDIENTES_VALIDACION", _HEADERS_PENDIENTES)

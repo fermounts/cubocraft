@@ -168,32 +168,31 @@ def _es_pregunta_abierta(texto: str) -> bool:
     return True
 
 
-# ── Consulta IA (pipeline RAG) ────────────────────────────────────────────────
+# ── Consulta IA (pipeline RAG con contexto completo) ──────────────────────────
+
+def _detectar_fuente(respuesta: str) -> str:
+    r = respuesta.lower()
+    if "base cubocraft" in r:
+        return "BASE_CONOCIMIENTO"
+    if "conocimiento general" in r:
+        return "IA_GENERAL"
+    return "NORMATIVA"
+
 
 def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
-    # Paso 1: buscar en BASE_CONOCIMIENTO validada
-    match = sheets_client.buscar_en_base_conocimiento(texto_usuario)
-    if match:
-        logger.info("RAG: respuesta desde BASE_CONOCIMIENTO")
-        return str(match.get("RESPUESTA_VALIDADA", ""))
+    # Leer contexto completo desde Sheets
+    base = sheets_client.get_base_conocimiento()
+    normativas = sheets_client.get_conocimiento_tecnico()
 
-    # Paso 2: buscar normativas relevantes en CONOCIMIENTO_TECNICO
-    conocimiento = sheets_client.get_conocimiento_tecnico()
-    palabras_sig = {w for w in texto_usuario.lower().split() if len(w) > 3}
-    ctx_items = [
-        k for k in conocimiento
-        if any(
-            w in (k.get("Nombre_Norma", "") + " " + k.get("Alcance", "")).lower()
-            for w in palabras_sig
-        )
-    ] if palabras_sig else []
+    ctx_base = "\n".join(
+        f"P: {r.get('PREGUNTA','')} | R: {r.get('RESPUESTA_VALIDADA','')} | Cat: {r.get('CATEGORIA','')}"
+        for r in base
+    ) or "Sin respuestas validadas aún."
 
-    fuente = "NORMATIVA" if ctx_items else "IA_GENERAL"
-    ctx_fuente = ctx_items if ctx_items else conocimiento
-    ctx = "\n".join(
+    ctx_norm = "\n".join(
         f"ID: {k.get('ID_Norma','')} | NORMA: {k.get('Nombre_Norma','')} | ALCANCE: {k.get('Alcance','')}"
-        for k in ctx_fuente
-    ) or "Sin conocimiento técnico cargado."
+        for k in normativas
+    ) or "Sin normativas cargadas."
 
     linea = (
         "EPP (IRAM 3620 cascos, IRAM 3627 calzado, IRAM 3649 guantes, SRT 299/11)"
@@ -203,9 +202,13 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
     system_text = (
         "Sos el Ingeniero Experto de CUBOCRAFT. "
         "Respondés en español, máximo 3 líneas cortas, sin markdown, sin asteriscos, sin negrita. Solo texto plano. "
-        "Citás normativas IRAM, CIRSOC, SRT según corresponda. "
         f"Línea de negocio activa: {linea}.\n\n"
-        f"Conocimiento técnico disponible:\n{ctx}"
+        "Priorizá las RESPUESTAS VALIDADAS sobre tu conocimiento general. "
+        "Si usás una respuesta validada indicá (fuente: base CUBOCRAFT). "
+        "Si usás una normativa indicá la norma. "
+        "Si respondés desde conocimiento general indicá (fuente: conocimiento general).\n\n"
+        f"=== RESPUESTAS VALIDADAS CUBOCRAFT ===\n{ctx_base}\n\n"
+        f"=== NORMATIVAS TÉCNICAS ===\n{ctx_norm}"
     )
     try:
         resp = _get_gemini_client().models.generate_content(
@@ -231,15 +234,9 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
         logger.error("Error en consulta IA: %s", e)
         return "No pude procesar tu consulta. Intentá de nuevo."
 
-    # Pasos 2 y 3: registrar pendiente y notificar supervisor
-    sheets_client.registrar_pendiente_validacion(texto_usuario, respuesta, fuente)
-    whatsapp_client.notificar_supervisora(
-        f"Nueva consulta sin validar:\n"
-        f"Pregunta: {texto_usuario}\n"
-        f"Respuesta dada: {respuesta}\n"
-        f"Fuente: {fuente}\n"
-        f"Revisa en Google Sheets → PENDIENTES_VALIDACION"
-    )
+    fuente = _detectar_fuente(respuesta)
+    sheets_client.registrar_pendiente(texto_usuario, respuesta, fuente)
+    logger.info("RAG: pendiente registrado fuente=%s", fuente)
     return respuesta
 
 
