@@ -184,7 +184,7 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
     )
     system_text = (
         "Sos el Ingeniero Experto de CUBOCRAFT. "
-        "Respondés en español, máximo 4-5 líneas (es para WhatsApp). "
+        "Respondés en español, máximo 3 líneas cortas, sin markdown, sin asteriscos, sin negrita. Solo texto plano. "
         "Citás normativas IRAM, CIRSOC, SRT según corresponda. "
         f"Línea de negocio activa: {linea}.\n\n"
         f"Conocimiento técnico disponible:\n{ctx}"
@@ -195,7 +195,7 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
             contents=texto_usuario,
             config=genai_types.GenerateContentConfig(
                 system_instruction=system_text,
-                max_output_tokens=300,
+                max_output_tokens=250,
             ),
         )
         return resp.text
