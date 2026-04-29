@@ -38,6 +38,17 @@ def _enviar_resumen_diario() -> None:
         logger.error("Error enviando resumen diario: %s", e)
 
 
+def _procesar_pendientes_job() -> None:
+    try:
+        n = sheets_client.procesar_pendientes_aprobados()
+        if n:
+            logger.info("Scheduler: %d pendiente(s) movido(s) a BASE_CONOCIMIENTO", n)
+        else:
+            logger.debug("Scheduler: sin pendientes aprobados para procesar")
+    except Exception:
+        logger.exception("Scheduler: error en procesar_pendientes_job")
+
+
 _tz_arg = pytz.timezone("America/Argentina/Buenos_Aires")
 _scheduler = BackgroundScheduler(timezone=_tz_arg)
 _scheduler.add_job(
@@ -46,8 +57,15 @@ _scheduler.add_job(
     id="resumen_diario",
     replace_existing=True,
 )
+_scheduler.add_job(
+    _procesar_pendientes_job,
+    "interval",
+    hours=1,
+    id="procesar_pendientes",
+    replace_existing=True,
+)
 _scheduler.start()
-logger.info("Scheduler iniciado — resumen diario a las 20:00 Argentina")
+logger.info("Scheduler iniciado — resumen 20:00 ARG | procesar_pendientes cada 1h")
 
 
 def _extract_twilio(req):

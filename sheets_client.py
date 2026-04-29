@@ -416,6 +416,56 @@ def get_pendientes_del_dia() -> list[dict]:
         return []
 
 
+def procesar_pendientes_aprobados() -> int:
+    """Mueve a BASE_CONOCIMIENTO los pendientes con ESTADO Aprobada o Corregida.
+
+    Devuelve la cantidad de registros procesados.
+    """
+    try:
+        ws_pend = _ensure_sheet("PENDIENTES_VALIDACION", _HEADERS_PENDIENTES)
+        ws_base = _ensure_sheet("BASE_CONOCIMIENTO", _HEADERS_BASE_CONOCIMIENTO)
+
+        registros = ws_pend.get_all_records()
+        headers = ws_pend.row_values(1)
+        col_estado = headers.index("ESTADO") + 1 if "ESTADO" in headers else None
+        if col_estado is None:
+            logger.error("procesar_pendientes_aprobados: columna ESTADO no encontrada")
+            return 0
+
+        procesados = 0
+        for i, r in enumerate(registros, start=2):
+            estado = str(r.get("ESTADO", "")).strip()
+            if estado not in ("Aprobada", "Corregida"):
+                continue
+
+            pregunta = str(r.get("PREGUNTA", ""))
+            respuesta = (
+                str(r.get("RESPUESTA_CORREGIDA", "")) if estado == "Corregida"
+                else str(r.get("RESPUESTA_DADA", ""))
+            )
+            fuente = str(r.get("FUENTE", ""))
+            validado_por = str(r.get("VALIDADO_POR", ""))
+
+            nueva_id = f"BC{datetime.now().strftime('%Y%m%d%H%M%S')}{procesados}"
+            ws_base.append_row([
+                nueva_id,
+                "",
+                pregunta,
+                respuesta,
+                fuente,
+                validado_por,
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            ])
+            ws_pend.update_cell(i, col_estado, "Procesada")
+            procesados += 1
+            logger.info("Pendiente %s → BASE_CONOCIMIENTO %s", r.get("ID", "?"), nueva_id)
+
+        return procesados
+    except Exception as e:
+        logger.error("procesar_pendientes_aprobados error: %s", e)
+        return 0
+
+
 def aprobar_pendiente(id_pendiente: str, respuesta_corregida: str, validador: str) -> bool:
     try:
         ws_pend = _ensure_sheet("PENDIENTES_VALIDACION", _HEADERS_PENDIENTES)
