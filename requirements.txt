@@ -3,6 +3,7 @@ twilio
 gspread
 google-auth
 google-genai
+google-generativeai
 python-dotenv
 apscheduler
 pytz

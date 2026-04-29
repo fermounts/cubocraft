@@ -1,8 +1,7 @@
 import logging
 import os
 
-from google import genai
-from google.genai import types as genai_types
+import google.generativeai as genai
 
 import config
 import session_store
@@ -64,21 +63,20 @@ _MENU_MAP: dict[str, str] = {
 
 _COMANDOS_CONTROL = {"si", "sí", "no", "listo", "fin"}
 
-_gemini_client: genai.Client | None = None
+_gemini_configured = False
 
 
-def _get_gemini_client() -> genai.Client:
-    global _gemini_client
-    if _gemini_client is None:
-        # Leer fresh desde env para no depender del valor congelado al importar config
+def _configure_gemini() -> None:
+    global _gemini_configured
+    if not _gemini_configured:
         api_key = config.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY", "")
         prefix = (api_key[:4] + "...") if api_key else "(vacía)"
         logger.info("GEMINI_API_KEY prefix=%s len=%d", prefix, len(api_key))
         if not api_key:
             logger.error("GEMINI_API_KEY no está configurada — verificá la variable en Render")
             raise RuntimeError("GEMINI_API_KEY no configurada")
-        _gemini_client = genai.Client(api_key=api_key)
-    return _gemini_client
+        genai.configure(api_key=api_key)
+        _gemini_configured = True
 
 
 # ── Renders reutilizables ─────────────────────────────────────────────────────
@@ -226,13 +224,14 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
 
     logger.info("RAG: iniciando consulta Gemini — empresa=%s pregunta=%r", empresa, texto_usuario[:80])
     try:
-        resp = _get_gemini_client().models.generate_content(
-            model="gemini-2.5-flash",
-            contents=texto_usuario,
-            config=genai_types.GenerateContentConfig(
-                system_instruction=system_text,
-                max_output_tokens=250,
-            ),
+        _configure_gemini()
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            system_instruction=system_text,
+        )
+        resp = model.generate_content(
+            texto_usuario,
+            generation_config=genai.GenerationConfig(max_output_tokens=250),
         )
         respuesta = resp.text
         logger.info("RAG: Gemini respondió — len=%d", len(respuesta or ""))
