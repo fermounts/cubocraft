@@ -416,57 +416,66 @@
        UOCRA corner badge
     ══════════════════════════════════════════════ */
 
-    @keyframes letterDrop {
-      from { opacity: 0; transform: translateY(-6px); }
-      to   { opacity: 1; transform: translateY(0); }
+    /* letras individuales del logo */
+    .cc-l {
+      display: inline;
+      transition: color 0.3s ease, text-shadow 0.3s ease;
+    }
+    .cc-l.glow {
+      color: #F59E0B;
+      text-shadow: 0 0 18px rgba(245,158,11,0.9), 0 0 40px rgba(245,158,11,0.5);
+    }
+
+    /* badge UOCRA — arranca invisible, aparece con bounce */
+    @keyframes badgeBounce {
+      0%   { transform: scale(0.3) translateY(30px); opacity: 0; }
+      60%  { transform: scale(1.15) translateY(-6px); opacity: 1; }
+      80%  { transform: scale(0.95) translateY(2px); }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
     }
 
     .uocra-badge {
       position: fixed;
-      bottom: 1.1rem;
-      right: 1.2rem;
+      bottom: 1.5rem;
+      right: 1.5rem;
       z-index: 9999;
+      background: rgba(15, 35, 65, 0.96);
+      border: 2px solid #F59E0B;
+      border-radius: 0.85rem;
+      padding: 0.65rem 1.2rem 0.75rem;
+      text-align: center;
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
-      gap: 1px;
+      align-items: center;
+      gap: 0.1rem;
       pointer-events: none;
       user-select: none;
+      opacity: 0;
+      box-shadow: 0 0 24px rgba(245,158,11,0.35), 0 8px 32px rgba(0,0,0,0.5);
     }
 
-    .uocra-label {
+    .uocra-badge.show {
+      animation: badgeBounce 0.55s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+    }
+
+    .uocra-powered {
       font-family: 'Inter', sans-serif;
-      font-size: 0.6rem;
-      font-weight: 500;
-      color: #A0AEC0;
-      letter-spacing: 0.08em;
+      font-size: 0.58rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      opacity: 0;
-      animation: letterDrop 0.4s ease forwards;
-      animation-delay: 0.2s;
     }
 
-    .uocra-word {
-      display: flex;
-      gap: 1px;
-    }
-
-    .uocra-word .l {
+    .uocra-text {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #CBD5E0;
-      letter-spacing: 0.05em;
-      opacity: 0;
-      animation: letterDrop 0.35s ease forwards;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #F59E0B;
+      letter-spacing: 0.08em;
+      line-height: 1;
+      text-shadow: 0 0 12px rgba(245,158,11,0.6);
     }
-
-    /* staggered delays — U O C R A */
-    .uocra-word .l:nth-child(1) { animation-delay: 0.5s; }
-    .uocra-word .l:nth-child(2) { animation-delay: 0.72s; }
-    .uocra-word .l:nth-child(3) { animation-delay: 0.94s; }
-    .uocra-word .l:nth-child(4) { animation-delay: 1.16s; }
-    .uocra-word .l:nth-child(5) { animation-delay: 1.38s; }
   </style>
 </head>
 <body>
@@ -475,7 +484,7 @@
      SECCIÓN 1 — HUB CENTRAL
 ══════════════════════════════════════════ -->
 <section id="hub">
-  <div class="hub-logo">CUBOCRAFT</div>
+  <div class="hub-logo" id="cc-logo"><span class="cc-l u-src" id="u-C">C</span><span class="cc-l u-src" id="u-U">U</span><span class="cc-l">B</span><span class="cc-l u-src" id="u-O">O</span><span class="cc-l">C</span><span class="cc-l u-src" id="u-R">R</span><span class="cc-l u-src" id="u-A">A</span><span class="cc-l">F</span><span class="cc-l">T</span></div>
   <p class="hub-tagline">Soluciones técnicas para construcción</p>
 
   <div class="hub-cards">
@@ -631,15 +640,9 @@
 </footer>
 
 <!-- UOCRA corner badge -->
-<div class="uocra-badge" aria-hidden="true">
-  <span class="uocra-label">powered by</span>
-  <div class="uocra-word">
-    <span class="l">U</span>
-    <span class="l">O</span>
-    <span class="l">C</span>
-    <span class="l">R</span>
-    <span class="l">A</span>
-  </div>
+<div class="uocra-badge" id="uocra-badge" aria-hidden="true">
+  <span class="uocra-powered">powered by</span>
+  <span class="uocra-text">UOCRA</span>
 </div>
 
 <!-- Botón ↑ Volver (aparece en CUBO y CRAFT) -->
@@ -647,21 +650,82 @@
 <a class="btn-back" id="btn-back-craft" href="#hub">↑ Volver al inicio</a>
 
 <script>
-  // Mostrar/ocultar botón "Volver" según sección visible
-  const observer = new IntersectionObserver(
+  // ── Botón Volver ─────────────────────────────────────────────
+  const sectionObserver = new IntersectionObserver(
     (entries) => {
       entries.forEach(({ target, isIntersecting }) => {
         const id = target.id;
         if (id === 'cubo' || id === 'craft') {
-          const btn = document.getElementById('btn-back-' + id);
-          btn.style.display = isIntersecting ? 'inline-flex' : 'none';
+          document.getElementById('btn-back-' + id).style.display =
+            isIntersecting ? 'inline-flex' : 'none';
         }
       });
     },
     { threshold: 0.15 }
   );
+  ['cubo', 'craft'].forEach(id => sectionObserver.observe(document.getElementById(id)));
 
-  ['cubo', 'craft'].forEach(id => observer.observe(document.getElementById(id)));
+  // ── Efecto UOCRA ─────────────────────────────────────────────
+  // Orden de iluminación: U → O → C → R → A
+  const uocraOrder = ['u-U', 'u-O', 'u-C', 'u-R', 'u-A'];
+  const badge = document.getElementById('uocra-badge');
+
+  // Fase 1 — iluminar letras en el logo (1 s)
+  setTimeout(() => {
+    uocraOrder.forEach((id, i) => {
+      setTimeout(() => {
+        document.getElementById(id).classList.add('glow');
+      }, i * 160);
+    });
+  }, 1000);
+
+  // Fase 2 — clonar letras y hacerlas volar al corner (2 s)
+  setTimeout(() => {
+    const vW = window.innerWidth;
+    const vH = window.innerHeight;
+    // destino: donde aparecerá el badge (bottom-right)
+    const tX = vW - 90;
+    const tY = vH - 55;
+
+    uocraOrder.forEach((id, i) => {
+      const el = document.getElementById(id);
+      const r  = el.getBoundingClientRect();
+
+      const clone = document.createElement('span');
+      clone.textContent = el.textContent;
+      Object.assign(clone.style, {
+        position:   'fixed',
+        left:       r.left + 'px',
+        top:        r.top  + 'px',
+        fontFamily: '"Barlow Condensed", sans-serif',
+        fontSize:   r.height + 'px',
+        fontWeight: '800',
+        color:      '#F59E0B',
+        lineHeight: '1',
+        zIndex:     '10000',
+        pointerEvents: 'none',
+        textShadow: '0 0 16px rgba(245,158,11,0.9)',
+      });
+      document.body.appendChild(clone);
+
+      const delay = i * 0.07;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        clone.style.transition =
+          `left 0.52s cubic-bezier(0.55,0,1,0.8) ${delay}s,` +
+          `top  0.52s cubic-bezier(0.55,0,1,0.8) ${delay}s,` +
+          `opacity 0.25s ease ${0.44 + delay}s`;
+        clone.style.left    = tX + 'px';
+        clone.style.top     = tY + 'px';
+        clone.style.opacity = '0';
+        setTimeout(() => clone.remove(), (0.8 + delay) * 1000);
+      }));
+    });
+  }, 2000);
+
+  // Fase 3 — mostrar badge con bounce (2.5 s)
+  setTimeout(() => {
+    badge.classList.add('show');
+  }, 2500);
 </script>
 
 </body>
