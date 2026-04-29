@@ -231,7 +231,7 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
         )
         resp = model.generate_content(
             texto_usuario,
-            generation_config=genai.GenerationConfig(max_output_tokens=250),
+            generation_config=genai.GenerationConfig(max_output_tokens=400),
         )
         respuesta = resp.text
         logger.info("RAG: Gemini respondió — len=%d", len(respuesta or ""))
