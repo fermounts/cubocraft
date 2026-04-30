@@ -695,7 +695,7 @@
     const tX  = window.innerWidth  - 100;
     const tY  = window.innerHeight - 70;
 
-    trigger.classList.add('hidden');
+    trigger.style.display = 'none';
 
     // Fase 1 — iluminar U→O→C→R→A con stagger 100ms
     uocraOrder.forEach((id, i) => {
@@ -746,12 +746,9 @@
       badge.classList.add('show');
     }, 1400);
 
-    // Fase 4 — revertir todo a los 10s desde el clic
+    // Fase 4 — solo apagar glow de letras a los 10s (badge y botón quedan permanentes)
     setTimeout(() => {
-      badge.classList.remove('show');
       uocraOrder.forEach(id => document.getElementById(id).classList.remove('glow'));
-      trigger.classList.remove('hidden');
-      uocraRunning = false;
     }, 10000);
   }
 
