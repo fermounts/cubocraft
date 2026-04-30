@@ -4,6 +4,7 @@ import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from flask import Flask, jsonify, request, send_from_directory
+import pathlib
 import pytz
 
 import bot_handler
@@ -16,7 +17,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+_STATIC_DIR = pathlib.Path(__file__).parent / "static"
+
+app = Flask(__name__, static_folder=str(_STATIC_DIR), static_url_path="/static")
 
 
 # ── Resumen diario al supervisor ──────────────────────────────────────────────
