@@ -435,7 +435,11 @@
     }
 
     .uocra-badge {
-      display: none;          /* oculto hasta que se activa */
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 9999;
+      display: none;
       flex-direction: column;
       align-items: center;
       gap: 0.2rem;
@@ -687,12 +691,10 @@
     if (uocraRunning) return;
     uocraRunning = true;
 
-    // Guardar posición del trigger ANTES de ocultarlo (destino del vuelo)
-    const tr  = trigger.getBoundingClientRect();
-    const tX  = tr.left + tr.width  / 2;
-    const tY  = tr.top  + tr.height / 2;
+    // Destino del vuelo: corner inferior derecho (centro del badge fijo)
+    const tX  = window.innerWidth  - 100;
+    const tY  = window.innerHeight - 70;
 
-    // Ocultar trigger, mostrar badge en su lugar (transparente aún)
     trigger.classList.add('hidden');
 
     // Fase 1 — iluminar U→O→C→R→A con stagger 100ms
@@ -744,13 +746,13 @@
       badge.classList.add('show');
     }, 1400);
 
-    // Fase 4 — revertir todo a los 5s desde el clic
+    // Fase 4 — revertir todo a los 10s desde el clic
     setTimeout(() => {
       badge.classList.remove('show');
       uocraOrder.forEach(id => document.getElementById(id).classList.remove('glow'));
       trigger.classList.remove('hidden');
       uocraRunning = false;
-    }, 5000);
+    }, 10000);
   }
 
   trigger.addEventListener('click', runUocra);
