@@ -435,26 +435,21 @@
     }
 
     .uocra-badge {
-      position: fixed;
-      bottom: 1.5rem;
-      right: 1.5rem;
-      z-index: 9999;
+      display: none;          /* oculto hasta que se activa */
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
       background: rgba(15, 35, 65, 0.96);
       border: 2px solid #F59E0B;
       border-radius: 0.85rem;
-      padding: 0.65rem 1.2rem 0.75rem;
+      padding: 0.7rem 2rem 0.85rem;
       text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.1rem;
-      pointer-events: none;
       user-select: none;
-      opacity: 0;
-      box-shadow: 0 0 24px rgba(245,158,11,0.35), 0 8px 32px rgba(0,0,0,0.5);
+      box-shadow: 0 0 24px rgba(245,158,11,0.35), 0 8px 32px rgba(0,0,0,0.4);
     }
 
     .uocra-badge.show {
+      display: flex;
       animation: badgeBounce 0.55s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
     }
 
@@ -501,9 +496,13 @@
      SECCIÓN 1 — HUB CENTRAL
 ══════════════════════════════════════════ -->
 <section id="hub">
-  <div class="hub-logo" id="cc-logo"><span class="cc-l u-src" id="u-C">C</span><span class="cc-l u-src" id="u-U">U</span><span class="cc-l">B</span><span class="cc-l u-src" id="u-O">O</span><span class="cc-l">C</span><span class="cc-l u-src" id="u-R">R</span><span class="cc-l u-src" id="u-A">A</span><span class="cc-l">F</span><span class="cc-l">T</span></div>
+  <div class="hub-logo" id="cc-logo"><span class="cc-l">C</span><span class="cc-l u-src" id="u-U">U</span><span class="cc-l">B</span><span class="cc-l u-src" id="u-O">O</span><span class="cc-l u-src" id="u-C">C</span><span class="cc-l u-src" id="u-R">R</span><span class="cc-l u-src" id="u-A">A</span><span class="cc-l">F</span><span class="cc-l">T</span></div>
   <p class="hub-tagline">Soluciones técnicas para construcción</p>
   <button id="uocra-trigger">Con la potencia de ›</button>
+  <div class="uocra-badge" id="uocra-badge" aria-hidden="true">
+    <span class="uocra-powered">Con la potencia de</span>
+    <span class="uocra-text">UOCRA</span>
+  </div>
 
   <div class="hub-cards">
     <a class="hub-card cubo" href="#cubo">
@@ -657,12 +656,6 @@
   <p class="footer-copy">CUBOCRAFT © 2026 &nbsp;·&nbsp; Powered by IA 🤖</p>
 </footer>
 
-<!-- UOCRA corner badge -->
-<div class="uocra-badge" id="uocra-badge" aria-hidden="true">
-  <span class="uocra-powered">powered by</span>
-  <span class="uocra-text">UOCRA</span>
-</div>
-
 <!-- Botón ↑ Volver (aparece en CUBO y CRAFT) -->
 <a class="btn-back" id="btn-back-cubo"  href="#hub">↑ Volver al inicio</a>
 <a class="btn-back" id="btn-back-craft" href="#hub">↑ Volver al inicio</a>
@@ -684,6 +677,7 @@
   ['cubo', 'craft'].forEach(id => sectionObserver.observe(document.getElementById(id)));
 
   // ── Efecto UOCRA (on click) ───────────────────────────────────
+  // Letras: U(1) O(3) C(4) R(5) A(6) de CUBOCRAFT
   const uocraOrder = ['u-U', 'u-O', 'u-C', 'u-R', 'u-A'];
   const badge   = document.getElementById('uocra-badge');
   const trigger = document.getElementById('uocra-trigger');
@@ -693,26 +687,27 @@
     if (uocraRunning) return;
     uocraRunning = true;
 
-    // Ocultar botón
+    // Guardar posición del trigger ANTES de ocultarlo (destino del vuelo)
+    const tr  = trigger.getBoundingClientRect();
+    const tX  = tr.left + tr.width  / 2;
+    const tY  = tr.top  + tr.height / 2;
+
+    // Ocultar trigger, mostrar badge en su lugar (transparente aún)
     trigger.classList.add('hidden');
 
-    // Fase 1 — iluminar U→O→C→R→A (0 – 0.5 s)
+    // Fase 1 — iluminar U→O→C→R→A con stagger 100ms
     uocraOrder.forEach((id, i) => {
       setTimeout(() => {
         document.getElementById(id).classList.add('glow');
       }, i * 100);
     });
 
-    // Fase 2 — volar letras al corner (1 s)
+    // Fase 2 — volar letras hacia donde está el trigger/badge (600ms)
     setTimeout(() => {
-      const vW = window.innerWidth;
-      const vH = window.innerHeight;
-      const tX = vW - 90;
-      const tY = vH - 55;
-
       uocraOrder.forEach((id, i) => {
         const el = document.getElementById(id);
         const r  = el.getBoundingClientRect();
+
         const clone = document.createElement('span');
         clone.textContent = el.textContent;
         Object.assign(clone.style, {
@@ -733,10 +728,10 @@
         const delay = i * 0.07;
         requestAnimationFrame(() => requestAnimationFrame(() => {
           clone.style.transition =
-            `left 0.52s cubic-bezier(0.55,0,1,0.8) ${delay}s,` +
-            `top  0.52s cubic-bezier(0.55,0,1,0.8) ${delay}s,` +
-            `opacity 0.25s ease ${0.44 + delay}s`;
-          clone.style.left    = tX + 'px';
+            `left 0.5s cubic-bezier(0.55,0,1,0.8) ${delay}s,` +
+            `top  0.5s cubic-bezier(0.55,0,1,0.8) ${delay}s,` +
+            `opacity 0.25s ease ${0.42 + delay}s`;
+          clone.style.left    = (tX - r.width / 2) + 'px';
           clone.style.top     = tY + 'px';
           clone.style.opacity = '0';
           setTimeout(() => clone.remove(), (0.85 + delay) * 1000);
@@ -744,22 +739,15 @@
       });
     }, 600);
 
-    // Fase 3 — badge bounce (1.5 s)
+    // Fase 3 — badge bounce (1.4s)
     setTimeout(() => {
       badge.classList.add('show');
-    }, 1500);
+    }, 1400);
 
-    // Fase 4 — revertir todo a los 5 s
+    // Fase 4 — revertir todo a los 5s desde el clic
     setTimeout(() => {
-      // Ocultar badge
       badge.classList.remove('show');
-
-      // Quitar glow de las letras
-      uocraOrder.forEach(id => {
-        document.getElementById(id).classList.remove('glow');
-      });
-
-      // Mostrar botón de nuevo
+      uocraOrder.forEach(id => document.getElementById(id).classList.remove('glow'));
       trigger.classList.remove('hidden');
       uocraRunning = false;
     }, 5000);
