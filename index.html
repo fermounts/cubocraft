@@ -185,61 +185,99 @@
       max-width: 420px;
     }
 
-    .hub-cards {
+    .hub-divider {
+      width: 100%;
+      max-width: 760px;
+      border: none;
+      border-top: 1px solid #E2E8F0;
+    }
+
+    .hub-columns {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1.25rem;
       width: 100%;
-      max-width: 700px;
+      max-width: 760px;
+      border: 1px solid #E2E8F0;
     }
 
-    @media (max-width: 520px) {
-      .hub-cards { grid-template-columns: 1fr; }
+    @media (max-width: 560px) {
+      .hub-columns { grid-template-columns: 1fr; }
+      .hub-col.cubo-col { border-right: none; border-bottom: 1px solid #E2E8F0; }
     }
 
-    .hub-card {
-      border-radius: 1.25rem;
-      padding: 2.5rem 1.5rem 2rem;
-      text-align: center;
-      text-decoration: none;
-      color: var(--white);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.75rem;
-      transition: transform 0.2s, box-shadow 0.2s;
-      cursor: pointer;
+    .hub-col {
+      padding: 2.5rem 2rem 2.5rem;
+      text-align: left;
+      border-top: 4px solid transparent;
     }
 
-    .hub-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 40px rgba(0,0,0,0.18);
-    }
+    .hub-col.cubo-col  { border-top-color: #1E40AF; border-right: 1px solid #E2E8F0; }
+    .hub-col.craft-col { border-top-color: #F59E0B; }
 
-    .hub-card.cubo  { background: var(--steel); }
-    .hub-card.craft { background: var(--navy);  }
-
-    .hub-card-emoji { font-size: 3.5rem; line-height: 1; }
-
-    .hub-card-title {
+    .hub-col-name {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 1.9rem;
+      font-size: 2.2rem;
       font-weight: 800;
       letter-spacing: 0.5px;
+      color: #1A202C;
       line-height: 1;
     }
 
-    .hub-card-sub {
-      font-size: 0.88rem;
-      opacity: 0.85;
-      font-weight: 500;
+    .hub-col-sub {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #718096;
+      margin-top: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
     }
 
-    .hub-card-arrow {
-      margin-top: 0.5rem;
-      font-size: 1.4rem;
-      opacity: 0.6;
+    .hub-col-data {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      list-style: none;
     }
+
+    .hub-col-data li {
+      font-size: 0.9rem;
+      color: #4A5568;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .hub-col-data li::before {
+      content: '';
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .cubo-col .hub-col-data li::before  { background: #1E40AF; }
+    .craft-col .hub-col-data li::before { background: #F59E0B; }
+
+    .hub-col-cta {
+      display: inline-block;
+      margin-top: 2rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.5rem 1.1rem;
+      border-radius: 0.3rem;
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .cubo-col  .hub-col-cta { color: #1E40AF; border: 1.5px solid #1E40AF; }
+    .craft-col .hub-col-cta { color: #B45309; border: 1.5px solid #F59E0B; }
+    .cubo-col  .hub-col-cta:hover { background: #1E40AF; color: #fff; }
+    .craft-col .hub-col-cta:hover { background: #F59E0B; color: #1A202C; }
 
     /* ══════════════════════════════════════════════
        SECCIÓN 2 — CUBO
@@ -517,19 +555,28 @@
     <span class="uocra-text">UOCRA</span>
   </div>
 
-  <div class="hub-cards">
-    <a class="hub-card cubo" href="#cubo">
-      <span class="hub-card-emoji">🦺</span>
-      <div class="hub-card-title">CUBO</div>
-      <div class="hub-card-sub">Seguridad e Higiene<br>EPP certificado</div>
-      <div class="hub-card-arrow">↓</div>
-    </a>
-    <a class="hub-card craft" href="#craft">
-      <span class="hub-card-emoji">🧱</span>
-      <div class="hub-card-title">CRAFT</div>
-      <div class="hub-card-sub">Métodos Constructivos<br>Materiales técnicos</div>
-      <div class="hub-card-arrow">↓</div>
-    </a>
+  <hr class="hub-divider">
+  <div class="hub-columns">
+    <div class="hub-col cubo-col">
+      <div class="hub-col-name">CUBO</div>
+      <div class="hub-col-sub">Seguridad e Higiene</div>
+      <ul class="hub-col-data">
+        <li>40+ productos EPP</li>
+        <li>Normativas IRAM</li>
+        <li>8 categorías</li>
+      </ul>
+      <a class="hub-col-cta" href="#cubo">Ver más →</a>
+    </div>
+    <div class="hub-col craft-col">
+      <div class="hub-col-name">CRAFT</div>
+      <div class="hub-col-sub">Métodos Constructivos</div>
+      <ul class="hub-col-data">
+        <li>40+ productos</li>
+        <li>CIRSOC · IRAM</li>
+        <li>6 categorías</li>
+      </ul>
+      <a class="hub-col-cta" href="#craft">Ver más →</a>
+    </div>
   </div>
 </section>
 
