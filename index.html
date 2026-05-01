@@ -11,13 +11,13 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --steel:    #4A5568;
-      --navy:     #1E3A5F;
-      --blue:     #1E40AF;
-      --orange:   #F59E0B;
-      --green:    #25D366;
-      --white:    #FFFFFF;
-      --off-white:#F8FAFC;
+      --h:       70px;
+      --steel:   #4A5568;
+      --navy:    #1E3A5F;
+      --blue:    #1E40AF;
+      --orange:  #F59E0B;
+      --green:   #25D366;
+      --white:   #FFFFFF;
     }
 
     html { scroll-behavior: smooth; }
@@ -28,119 +28,162 @@
       line-height: 1.6;
     }
 
-    /* ── Utility ───────────────────────────────────── */
-
     .sr-only {
       position: absolute; width: 1px; height: 1px;
       padding: 0; margin: -1px; overflow: hidden;
       clip: rect(0,0,0,0); white-space: nowrap; border: 0;
     }
 
-    /* WhatsApp SVG icon */
-    .wa-icon {
-      width: 22px; height: 22px; fill: currentColor; flex-shrink: 0;
-    }
+    .wa-icon { width: 20px; height: 20px; fill: currentColor; flex-shrink: 0; }
 
-    /* Stat blocks shared */
-    .stats {
+    /* ══════════════════════════════════════════════
+       HEADER FIJO — logo img + franja de color
+    ══════════════════════════════════════════════ */
+
+    .site-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--h);
+      z-index: 1000;
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      align-items: stretch;
+    }
+
+    .header-logo-img {
+      width: 80px;
+      height: var(--h);
+      object-fit: cover;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .header-band {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem 0 1.5rem;
       gap: 1rem;
-      margin-top: 0.5rem;
+      background: var(--navy);
+      transition: background 0.4s ease;
+      min-width: 0;
     }
 
-    .stat {
-      text-align: center;
-      padding: 1rem 1.5rem;
-      border-radius: 0.75rem;
-      min-width: 130px;
-    }
-
-    .stat-num {
+    .header-band-text {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 2rem;
-      font-weight: 800;
-      line-height: 1;
+      font-size: clamp(1rem, 2.2vw, 1.35rem);
+      font-weight: 700;
+      color: #fff;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: opacity 0.25s ease;
     }
 
-    .stat-label {
-      font-size: 0.78rem;
-      font-weight: 500;
-      margin-top: 0.3rem;
-      opacity: 0.85;
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.1rem;
+      list-style: none;
+      flex-shrink: 0;
     }
 
-    /* Feature columns */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-      width: 100%;
+    .nav-link {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.82);
+      text-decoration: none;
+      padding: 0.3rem 0.55rem;
+      border-radius: 0.25rem;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
     }
+
+    .nav-link:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: #fff;
+      border-radius: 2px;
+      transition: transform 0.25s, opacity 0.25s;
+    }
+
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      top: var(--h); left: 0; right: 0;
+      background: var(--navy);
+      z-index: 999;
+      flex-direction: column;
+      padding: 0.5rem 0 1rem;
+      transition: background 0.4s ease;
+    }
+
+    .mobile-nav.open { display: flex; }
+    .mobile-nav .nav-link { padding: 0.75rem 1.5rem; font-size: 0.92rem; border-radius: 0; }
 
     @media (max-width: 640px) {
-      .features { grid-template-columns: 1fr; }
+      .header-nav { display: none; }
+      .hamburger  { display: flex; }
     }
 
-    .feature {
-      padding: 1.25rem;
-      border-radius: 0.75rem;
-      text-align: center;
-    }
+    section[id] { scroll-margin-top: var(--h); }
 
-    .feature-icon {
-      font-size: 2rem;
-      margin-bottom: 0.6rem;
-      display: block;
-    }
-
-    .feature h3 {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-bottom: 0.4rem;
-    }
-
-    .feature p {
-      font-size: 0.82rem;
-      opacity: 0.8;
-      line-height: 1.5;
-    }
-
-    /* CTA button */
+    /* CTA WhatsApp shared */
     .btn-wa {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: 0.6rem;
+      gap: 0.55rem;
       font-family: 'Inter', sans-serif;
       font-weight: 700;
-      font-size: 1rem;
-      padding: 0.9rem 2.2rem;
-      border-radius: 0.75rem;
+      font-size: 0.95rem;
+      padding: 0.75rem 1.8rem;
+      border-radius: 0.5rem;
       text-decoration: none;
       transition: filter 0.15s, transform 0.1s;
-      cursor: pointer;
       border: none;
+      cursor: pointer;
+      align-self: flex-start;
     }
 
-    .btn-wa:hover  { filter: brightness(1.12); transform: translateY(-2px); }
+    .btn-wa:hover  { filter: brightness(1.1); transform: translateY(-2px); }
     .btn-wa:active { transform: translateY(0); }
+
+    .btn-wa.cubo-btn  { background: var(--blue);   color: #fff; box-shadow: 0 4px 18px rgba(30,64,175,0.45); }
+    .btn-wa.craft-btn { background: var(--orange);  color: #1A202C; box-shadow: 0 4px 18px rgba(245,158,11,0.4); }
 
     /* Back button */
     .btn-back {
       position: fixed;
-      bottom: 1.5rem;
-      left: 50%;
+      bottom: 1.5rem; left: 50%;
       transform: translateX(-50%);
-      background: rgba(255,255,255,0.15);
-      color: var(--white);
-      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.28);
       backdrop-filter: blur(8px);
       font-family: 'Inter', sans-serif;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 600;
-      padding: 0.55rem 1.2rem;
+      padding: 0.5rem 1.1rem;
       border-radius: 9999px;
       text-decoration: none;
       display: none;
@@ -150,28 +193,28 @@
       transition: background 0.15s;
     }
 
-    .btn-back:hover { background: rgba(255,255,255,0.25); }
+    .btn-back:hover { background: rgba(255,255,255,0.24); }
 
     /* ══════════════════════════════════════════════
-       SECCIÓN 1 — HUB
+       HUB
     ══════════════════════════════════════════════ */
 
     #hub {
-      min-height: 100vh;
+      height: 100vh;
       background: var(--white);
       color: #1A202C;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: calc(4rem + 60px) 1.5rem 5rem;
-      gap: 2.5rem;
+      padding: calc(var(--h) + 1.5rem) 1.5rem 2rem;
+      gap: 1.5rem;
       text-align: center;
     }
 
     .hub-logo {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(3rem, 10vw, 5.5rem);
+      font-size: clamp(3rem, 9vw, 5.5rem);
       font-weight: 800;
       color: #1E3A5F;
       letter-spacing: -1px;
@@ -179,15 +222,15 @@
     }
 
     .hub-tagline {
-      font-size: clamp(1rem, 3vw, 1.25rem);
+      font-size: clamp(0.9rem, 2.2vw, 1.1rem);
       color: #4A5568;
       font-weight: 500;
-      max-width: 420px;
+      max-width: 400px;
     }
 
     .hub-divider {
       width: 100%;
-      max-width: 760px;
+      max-width: 720px;
       border: none;
       border-top: 1px solid #E2E8F0;
     }
@@ -196,17 +239,17 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       width: 100%;
-      max-width: 760px;
+      max-width: 720px;
       border: 1px solid #E2E8F0;
     }
 
-    @media (max-width: 560px) {
+    @media (max-width: 540px) {
       .hub-columns { grid-template-columns: 1fr; }
       .hub-col.cubo-col { border-right: none; border-bottom: 1px solid #E2E8F0; }
     }
 
     .hub-col {
-      padding: 2.5rem 2rem 2.5rem;
+      padding: 1.75rem 1.75rem;
       text-align: left;
       border-top: 4px solid transparent;
     }
@@ -216,44 +259,42 @@
 
     .hub-col-name {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 2.2rem;
+      font-size: 1.9rem;
       font-weight: 800;
-      letter-spacing: 0.5px;
       color: #1A202C;
       line-height: 1;
     }
 
     .hub-col-sub {
-      font-size: 0.78rem;
+      font-size: 0.74rem;
       font-weight: 600;
       color: #718096;
-      margin-top: 0.35rem;
+      margin-top: 0.25rem;
       text-transform: uppercase;
       letter-spacing: 0.07em;
     }
 
     .hub-col-data {
-      margin-top: 1.5rem;
+      margin-top: 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.55rem;
+      gap: 0.4rem;
       list-style: none;
     }
 
     .hub-col-data li {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: #4A5568;
       font-weight: 500;
       display: flex;
       align-items: center;
-      gap: 0.55rem;
+      gap: 0.5rem;
     }
 
     .hub-col-data li::before {
       content: '';
       display: inline-block;
-      width: 5px;
-      height: 5px;
+      width: 5px; height: 5px;
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -263,14 +304,13 @@
 
     .hub-col-cta {
       display: inline-block;
-      margin-top: 2rem;
+      margin-top: 1.25rem;
       font-family: 'Inter', sans-serif;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
-      padding: 0.5rem 1.1rem;
+      padding: 0.45rem 1rem;
       border-radius: 0.3rem;
       text-decoration: none;
-      letter-spacing: 0.01em;
       transition: background 0.15s, color 0.15s;
     }
 
@@ -280,7 +320,81 @@
     .craft-col .hub-col-cta:hover { background: #F59E0B; color: #1A202C; }
 
     /* ══════════════════════════════════════════════
-       SECCIONES CUBO + CRAFT — layout 2 columnas
+       QUIÉNES SOMOS
+    ══════════════════════════════════════════════ */
+
+    #quienes {
+      background: #F8FAFC;
+      color: #1A202C;
+      padding: 5.5rem 1.5rem;
+      text-align: center;
+    }
+
+    .quienes-inner {
+      max-width: 840px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.75rem;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #1E40AF;
+    }
+
+    .quienes-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 800;
+      color: #1E3A5F;
+      line-height: 1.05;
+    }
+
+    .quienes-text {
+      font-size: 1rem;
+      color: #4A5568;
+      line-height: 1.75;
+      max-width: 620px;
+    }
+
+    .quienes-cols {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.1rem;
+      width: 100%;
+    }
+
+    @media (max-width: 580px) { .quienes-cols { grid-template-columns: 1fr; } }
+
+    .quienes-col {
+      background: #fff;
+      border: 1px solid #E2E8F0;
+      border-top: 3px solid #1E40AF;
+      padding: 1.5rem 1.1rem;
+      text-align: center;
+    }
+
+    .quienes-col-icon { font-size: 1.75rem; display: block; margin-bottom: 0.6rem; }
+
+    .quienes-col-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #1E3A5F;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.35rem;
+    }
+
+    .quienes-col p { font-size: 0.82rem; color: #718096; line-height: 1.5; }
+
+    /* ══════════════════════════════════════════════
+       CUBO + CRAFT — layout 2 columnas full-viewport
     ══════════════════════════════════════════════ */
 
     #cubo, #craft {
@@ -293,8 +407,7 @@
     .section-img-col { overflow: hidden; }
 
     .section-side-img {
-      width: 100%;
-      height: 100%;
+      width: 100%; height: 100%;
       object-fit: cover;
       display: block;
     }
@@ -303,17 +416,16 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 3rem 3rem 3rem 2.5rem;
-      gap: 1rem;
+      padding: calc(var(--h) + 2rem) 2.5rem 2.5rem 2.5rem;
+      gap: 0.9rem;
       overflow: hidden;
     }
 
-    .cubo-content { background: var(--steel); color: #fff; }
-    .craft-content { background: var(--navy);  color: #fff; }
+    .cubo-content  { background: var(--steel); }
+    .craft-content { background: var(--navy);  }
 
     .sec-label {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.18em;
       text-transform: uppercase;
@@ -324,136 +436,170 @@
 
     .sec-title {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(1.9rem, 3.2vw, 2.8rem);
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
       font-weight: 800;
       line-height: 1.05;
     }
 
     .sec-sub {
-      font-size: 0.93rem;
-      opacity: 0.75;
+      font-size: 0.9rem;
+      opacity: 0.72;
       font-style: italic;
-      margin-top: -0.3rem;
+      margin-top: -0.2rem;
     }
 
     .sec-features {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem;
-      margin-top: 0.25rem;
+      gap: 0.65rem;
     }
 
     .sec-feature {
       background: rgba(255,255,255,0.08);
-      border-radius: 0.4rem;
-      padding: 0.85rem 0.8rem;
+      border-radius: 0.35rem;
+      padding: 0.75rem 0.7rem;
     }
 
     .sec-feature-title {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.25rem;
     }
 
-    .sec-feature p {
-      font-size: 0.78rem;
-      opacity: 0.7;
-      line-height: 1.4;
+    .sec-feature p { font-size: 0.75rem; opacity: 0.68; line-height: 1.35; }
+
+    /* CRAFT subcategories */
+    .sec-categories {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
     }
 
-    .btn-wa.cubo-btn {
-      background: var(--blue);
-      color: var(--white);
-      box-shadow: 0 4px 20px rgba(30,64,175,0.5);
-      align-self: flex-start;
-    }
-
-    .btn-wa.craft-btn {
-      background: var(--orange);
-      color: #1A202C;
-      box-shadow: 0 4px 20px rgba(245,158,11,0.45);
-      align-self: flex-start;
+    .sec-cat {
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      background: rgba(245,158,11,0.18);
+      border: 1px solid rgba(245,158,11,0.45);
+      color: #F59E0B;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
     @media (max-width: 768px) {
-      #cubo, #craft {
-        height: auto;
-        min-height: 100vh;
-        grid-template-columns: 1fr;
-      }
-      .section-img-col   { height: 40vh; }
-      .section-content-col { padding: 2.5rem 1.5rem; }
-      .sec-features      { grid-template-columns: 1fr; }
-      .btn-wa.cubo-btn, .btn-wa.craft-btn { align-self: center; }
+      #cubo, #craft    { height: auto; min-height: 100vh; grid-template-columns: 1fr; }
+      .section-img-col { height: 38vh; }
+      .section-content-col { padding: 2rem 1.5rem; }
+      .sec-features    { grid-template-columns: 1fr; }
+      .btn-wa          { align-self: center; }
     }
+
+    /* ══════════════════════════════════════════════
+       CONTACTO
+    ══════════════════════════════════════════════ */
+
+    #contacto {
+      background: var(--navy);
+      color: #fff;
+      padding: 5.5rem 1.5rem;
+      text-align: center;
+    }
+
+    .contacto-inner {
+      max-width: 560px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.4rem;
+    }
+
+    .contacto-label { color: #F59E0B; }
+
+    .contacto-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .contacto-sub {
+      font-size: 0.97rem;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.65;
+      margin-top: -0.2rem;
+    }
+
+    .btn-wa-contact {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 0.8rem 2rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      background: var(--green);
+      color: #fff;
+      transition: filter 0.15s, transform 0.1s;
+    }
+
+    .btn-wa-contact:hover  { filter: brightness(1.1); transform: translateY(-2px); }
+    .btn-wa-contact:active { transform: translateY(0); }
+
+    .contacto-info { font-size: 0.82rem; color: rgba(255,255,255,0.4); }
 
     /* ══════════════════════════════════════════════
        FOOTER
     ══════════════════════════════════════════════ */
 
     footer {
-      background: var(--white);
+      background: #fff;
       color: #4A5568;
       text-align: center;
-      padding: 2rem 1.5rem;
+      padding: 1.75rem 1.5rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.6rem;
     }
 
     .footer-logo {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 800;
       color: var(--navy);
     }
 
-    .footer-normas {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.4rem;
-    }
+    .footer-normas { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.35rem; }
 
     .footer-normas span {
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 600;
-      padding: 0.2rem 0.6rem;
+      padding: 0.18rem 0.55rem;
       border-radius: 9999px;
       background: #EDF2F7;
       color: #4A5568;
     }
 
-    .footer-copy {
-      font-size: 0.78rem;
-      color: #A0AEC0;
-    }
+    .footer-copy { font-size: 0.74rem; color: #A0AEC0; }
 
     /* ══════════════════════════════════════════════
-       Sección visibility observer para btn-back
+       EFECTO UOCRA
     ══════════════════════════════════════════════ */
 
-    #btn-back-cubo, #btn-back-craft { display: none; }
+    .cc-l { display: inline; transition: color 0.3s ease, text-shadow 0.3s ease; }
 
-    /* ══════════════════════════════════════════════
-       UOCRA corner badge
-    ══════════════════════════════════════════════ */
-
-    /* letras individuales del logo */
-    .cc-l {
-      display: inline;
-      transition: color 0.3s ease, text-shadow 0.3s ease;
-    }
     .cc-l.glow {
       color: #F59E0B;
       text-shadow: 0 0 18px rgba(245,158,11,0.9), 0 0 40px rgba(245,158,11,0.5);
     }
 
-    /* badge UOCRA — arranca invisible, aparece con bounce */
     @keyframes badgeBounce {
       0%   { transform: scale(0.3) translateY(30px); opacity: 0; }
       60%  { transform: scale(1.15) translateY(-6px); opacity: 1; }
@@ -463,17 +609,16 @@
 
     .uocra-badge {
       position: fixed;
-      bottom: 1.5rem;
-      right: 1.5rem;
+      bottom: 1.5rem; right: 1.5rem;
       z-index: 9999;
       display: none;
       flex-direction: column;
       align-items: center;
       gap: 0.2rem;
-      background: rgba(15, 35, 65, 0.96);
+      background: rgba(15,35,65,0.96);
       border: 2px solid #F59E0B;
       border-radius: 0.85rem;
-      padding: 0.7rem 2rem 0.85rem;
+      padding: 0.65rem 1.8rem 0.8rem;
       text-align: center;
       user-select: none;
       box-shadow: 0 0 24px rgba(245,158,11,0.35), 0 8px 32px rgba(0,0,0,0.4);
@@ -481,21 +626,21 @@
 
     .uocra-badge.show {
       display: flex;
-      animation: badgeBounce 0.55s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+      animation: badgeBounce 0.55s cubic-bezier(0.34,1.2,0.64,1) forwards;
     }
 
     .uocra-powered {
       font-family: 'Inter', sans-serif;
-      font-size: 0.58rem;
+      font-size: 0.55rem;
       font-weight: 600;
-      color: rgba(255,255,255,0.7);
+      color: rgba(255,255,255,0.65);
       letter-spacing: 0.12em;
       text-transform: uppercase;
     }
 
     .uocra-text {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 2rem;
+      font-size: 1.9rem;
       font-weight: 800;
       color: #F59E0B;
       letter-spacing: 0.08em;
@@ -503,283 +648,34 @@
       text-shadow: 0 0 12px rgba(245,158,11,0.6);
     }
 
-    /* botón trigger sutil */
     #uocra-trigger {
       background: none;
       border: none;
       font-family: 'Inter', sans-serif;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 500;
       color: #9CA3AF;
       cursor: pointer;
-      padding: 0.25rem 0.5rem;
+      padding: 0.2rem 0.5rem;
       letter-spacing: 0.02em;
-      transition: color 0.2s ease, opacity 0.3s ease;
-      margin-top: -0.5rem;
+      transition: color 0.2s ease;
+      margin-top: -0.75rem;
     }
+
     #uocra-trigger:hover { color: #F59E0B; }
-    #uocra-trigger.hidden { opacity: 0; pointer-events: none; }
 
-    /* ══════════════════════════════════════════════
-       HEADER FIJO
-    ══════════════════════════════════════════════ */
-
-    .site-header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 1000;
-      background: #fff;
-      height: 60px;
-      box-shadow: 0 1px 0 #E2E8F0, 0 2px 10px rgba(0,0,0,0.06);
-    }
-
-    .header-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 1.5rem;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .header-logo {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 1.45rem;
-      font-weight: 800;
-      color: #1E3A5F;
-      letter-spacing: 0.5px;
-      text-decoration: none;
-      flex-shrink: 0;
-    }
-
-    .header-nav {
-      display: flex;
-      align-items: center;
-      gap: 0.15rem;
-      list-style: none;
-    }
-
-    .nav-link {
-      font-family: 'Inter', sans-serif;
-      font-size: 0.84rem;
-      font-weight: 600;
-      color: #4A5568;
-      text-decoration: none;
-      padding: 0.4rem 0.7rem;
-      border-radius: 0.3rem;
-      transition: color 0.15s, background 0.15s;
-      white-space: nowrap;
-    }
-
-    .nav-link:hover { color: #1E3A5F; background: #F1F5F9; }
-
-    .hamburger {
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      gap: 5px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0.5rem;
-    }
-
-    .hamburger span {
-      display: block;
-      width: 22px;
-      height: 2px;
-      background: #1E3A5F;
-      border-radius: 2px;
-      transition: transform 0.25s, opacity 0.25s;
-    }
-
-    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-    .hamburger.open span:nth-child(2) { opacity: 0; }
-    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-    .mobile-nav {
-      display: none;
-      position: fixed;
-      top: 60px; left: 0; right: 0;
-      background: #fff;
-      border-top: 1px solid #E2E8F0;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-      z-index: 999;
-      flex-direction: column;
-      padding: 0.5rem 0 1rem;
-    }
-
-    .mobile-nav.open { display: flex; }
-
-    .mobile-nav .nav-link {
-      padding: 0.8rem 1.5rem;
-      border-radius: 0;
-      font-size: 0.95rem;
-    }
-
-    @media (max-width: 680px) {
-      .header-nav { display: none; }
-      .hamburger  { display: flex; }
-    }
-
-    /* scroll offset para header fijo */
-    section[id] { scroll-margin-top: 60px; }
-
-    /* ══════════════════════════════════════════════
-       QUIÉNES SOMOS
-    ══════════════════════════════════════════════ */
-
-    #quienes {
-      background: #F8FAFC;
-      color: #1A202C;
-      padding: 6rem 1.5rem;
-      text-align: center;
-    }
-
-    .quienes-inner {
-      max-width: 860px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2rem;
-    }
-
-    .section-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #1E40AF;
-    }
-
-    .quienes-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(2rem, 6vw, 2.8rem);
-      font-weight: 800;
-      color: #1E3A5F;
-      line-height: 1.05;
-    }
-
-    .quienes-text {
-      font-size: 1.05rem;
-      color: #4A5568;
-      line-height: 1.8;
-      max-width: 640px;
-    }
-
-    .quienes-cols {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.25rem;
-      width: 100%;
-      margin-top: 0.5rem;
-    }
-
-    @media (max-width: 600px) {
-      .quienes-cols { grid-template-columns: 1fr; }
-    }
-
-    .quienes-col {
-      background: #fff;
-      border: 1px solid #E2E8F0;
-      border-top: 3px solid #1E40AF;
-      padding: 1.75rem 1.25rem;
-      text-align: center;
-    }
-
-    .quienes-col-icon {
-      font-size: 2rem;
-      display: block;
-      margin-bottom: 0.75rem;
-      line-height: 1;
-    }
-
-    .quienes-col-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 1rem;
-      font-weight: 800;
-      color: #1E3A5F;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 0.45rem;
-    }
-
-    .quienes-col p {
-      font-size: 0.84rem;
-      color: #718096;
-      line-height: 1.55;
-    }
-
-    /* ══════════════════════════════════════════════
-       CONTACTO
-    ══════════════════════════════════════════════ */
-
-    #contacto {
-      background: #1E3A5F;
-      color: #fff;
-      padding: 6rem 1.5rem;
-      text-align: center;
-    }
-
-    .contacto-inner {
-      max-width: 580px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1.5rem;
-    }
-
-    .contacto-label { color: #F59E0B; }
-
-    .contacto-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(2rem, 6vw, 2.8rem);
-      font-weight: 800;
-      line-height: 1.1;
-    }
-
-    .contacto-sub {
-      font-size: 1rem;
-      color: rgba(255,255,255,0.72);
-      line-height: 1.65;
-      margin-top: -0.25rem;
-    }
-
-    .btn-wa-contact {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      font-family: 'Inter', sans-serif;
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 0.9rem 2.2rem;
-      border-radius: 0.5rem;
-      text-decoration: none;
-      background: #25D366;
-      color: #fff;
-      transition: filter 0.15s, transform 0.1s;
-    }
-
-    .btn-wa-contact:hover  { filter: brightness(1.1); transform: translateY(-2px); }
-    .btn-wa-contact:active { transform: translateY(0); }
-
-    .contacto-info {
-      font-size: 0.84rem;
-      color: rgba(255,255,255,0.45);
-    }
+    #btn-back-cubo, #btn-back-craft { display: none; }
   </style>
 </head>
 <body>
 
 <!-- ══════════════════════════════════════════
-     HEADER FIJO
+     HEADER FIJO — logo img + franja de color
 ══════════════════════════════════════════ -->
-<header class="site-header">
-  <div class="header-inner">
-    <a href="#hub" class="header-logo">CUBOCRAFT</a>
+<header class="site-header" id="site-header">
+  <img class="header-logo-img" id="header-logo" src="/static/cubo.png" alt="CUBOCRAFT logo">
+  <div class="header-band" id="header-band">
+    <span class="header-band-text" id="header-band-text">CUBOCRAFT — Soluciones técnicas para construcción</span>
     <nav aria-label="Navegación principal">
       <ul class="header-nav">
         <li><a class="nav-link" href="#hub">Inicio</a></li>
@@ -793,17 +689,18 @@
       <span></span><span></span><span></span>
     </button>
   </div>
-  <nav class="mobile-nav" id="mobile-nav" aria-label="Menú móvil">
-    <a class="nav-link" href="#hub"      onclick="closeMobileNav()">Inicio</a>
-    <a class="nav-link" href="#quienes"  onclick="closeMobileNav()">Quiénes Somos</a>
-    <a class="nav-link" href="#cubo"     onclick="closeMobileNav()">CUBO</a>
-    <a class="nav-link" href="#craft"    onclick="closeMobileNav()">CRAFT</a>
-    <a class="nav-link" href="#contacto" onclick="closeMobileNav()">Contacto</a>
-  </nav>
 </header>
 
+<nav class="mobile-nav" id="mobile-nav" aria-label="Menú móvil">
+  <a class="nav-link" href="#hub"      onclick="closeMobileNav()">Inicio</a>
+  <a class="nav-link" href="#quienes"  onclick="closeMobileNav()">Quiénes Somos</a>
+  <a class="nav-link" href="#cubo"     onclick="closeMobileNav()">CUBO</a>
+  <a class="nav-link" href="#craft"    onclick="closeMobileNav()">CRAFT</a>
+  <a class="nav-link" href="#contacto" onclick="closeMobileNav()">Contacto</a>
+</nav>
+
 <!-- ══════════════════════════════════════════
-     SECCIÓN 1 — HUB CENTRAL
+     HUB CENTRAL
 ══════════════════════════════════════════ -->
 <section id="hub">
   <div class="hub-logo" id="cc-logo"><span class="cc-l">C</span><span class="cc-l u-src" id="u-U">U</span><span class="cc-l">B</span><span class="cc-l u-src" id="u-O">O</span><span class="cc-l u-src" id="u-C">C</span><span class="cc-l u-src" id="u-R">R</span><span class="cc-l u-src" id="u-A">A</span><span class="cc-l">F</span><span class="cc-l">T</span></div>
@@ -813,7 +710,6 @@
     <span class="uocra-powered">Con la potencia de</span>
     <span class="uocra-text">UOCRA</span>
   </div>
-
   <hr class="hub-divider">
   <div class="hub-columns">
     <div class="hub-col cubo-col">
@@ -872,7 +768,7 @@
 </section>
 
 <!-- ══════════════════════════════════════════
-     SECCIÓN 2 — CUBO
+     CUBO
 ══════════════════════════════════════════ -->
 <section id="cubo">
   <div class="section-img-col">
@@ -910,7 +806,7 @@
 </section>
 
 <!-- ══════════════════════════════════════════
-     SECCIÓN 3 — CRAFT
+     CRAFT
 ══════════════════════════════════════════ -->
 <section id="craft">
   <div class="section-img-col">
@@ -933,6 +829,14 @@
         <div class="sec-feature-title">Asesor IA 24/7</div>
         <p>Consultas técnicas por WhatsApp al instante.</p>
       </div>
+    </div>
+    <div class="sec-categories">
+      <span class="sec-cat">Morteros</span>
+      <span class="sec-cat">Adhesivos</span>
+      <span class="sec-cat">Impermeabilizantes</span>
+      <span class="sec-cat">Steel Frame</span>
+      <span class="sec-cat">Aislaciones</span>
+      <span class="sec-cat">Refuerzos</span>
     </div>
     <a
       class="btn-wa craft-btn"
@@ -975,30 +879,66 @@
 <footer>
   <div class="footer-logo">CUBOCRAFT</div>
   <div class="footer-normas">
-    <span>IRAM</span>
-    <span>CIRSOC</span>
-    <span>SRT</span>
+    <span>IRAM</span><span>CIRSOC</span><span>SRT</span>
   </div>
   <p class="footer-copy">CUBOCRAFT © 2026 &nbsp;·&nbsp; Powered by IA 🤖</p>
 </footer>
 
-<!-- Botón ↑ Volver (aparece en CUBO y CRAFT) -->
 <a class="btn-back" id="btn-back-cubo"  href="#hub">↑ Volver al inicio</a>
 <a class="btn-back" id="btn-back-craft" href="#hub">↑ Volver al inicio</a>
 
 <script>
-  // ── Hamburguesa mobile ───────────────────────────────────────
+  // ── Header dinámico por sección ──────────────────────────────
+  const headerStates = {
+    hub:      { bg: '#1E3A5F', text: 'CUBOCRAFT — Soluciones técnicas para construcción', logo: '/static/cubo.png' },
+    quienes:  { bg: '#1E3A5F', text: 'Quiénes Somos',                                     logo: '/static/cubo.png' },
+    cubo:     { bg: '#1E40AF', text: 'CUBO — Seguridad e Higiene',                         logo: '/static/cubo.png' },
+    craft:    { bg: '#D97706', text: 'CRAFT — Métodos Constructivos',                       logo: '/static/craft.png' },
+    contacto: { bg: '#1E3A5F', text: 'Contacto',                                            logo: '/static/cubo.png' },
+  };
+
+  const headerBand    = document.getElementById('header-band');
+  const headerBandTxt = document.getElementById('header-band-text');
+  const headerLogoImg = document.getElementById('header-logo');
+  const mobileNavEl   = document.getElementById('mobile-nav');
+
+  function applyHeaderState(id) {
+    const s = headerStates[id] || headerStates.hub;
+    headerBand.style.background    = s.bg;
+    mobileNavEl.style.background   = s.bg;
+    headerBandTxt.style.opacity    = '0';
+    setTimeout(() => {
+      headerBandTxt.textContent    = s.text;
+      headerBandTxt.style.opacity  = '1';
+    }, 150);
+    headerLogoImg.src = s.logo;
+  }
+
+  const headerObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(({ target, isIntersecting }) => {
+        if (isIntersecting) applyHeaderState(target.id);
+      });
+    },
+    { threshold: 0.4 }
+  );
+
+  ['hub', 'quienes', 'cubo', 'craft', 'contacto'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) headerObserver.observe(el);
+  });
+
+  // ── Hamburguesa ──────────────────────────────────────────────
   const hamburger = document.getElementById('hamburger');
-  const mobileNav = document.getElementById('mobile-nav');
   function closeMobileNav() {
     hamburger.classList.remove('open');
     hamburger.setAttribute('aria-expanded', 'false');
-    mobileNav.classList.remove('open');
+    mobileNavEl.classList.remove('open');
   }
   hamburger.addEventListener('click', () => {
-    const isOpen = mobileNav.classList.toggle('open');
-    hamburger.classList.toggle('open', isOpen);
-    hamburger.setAttribute('aria-expanded', isOpen);
+    const open = mobileNavEl.classList.toggle('open');
+    hamburger.classList.toggle('open', open);
+    hamburger.setAttribute('aria-expanded', open);
   });
 
   // ── Botón Volver ─────────────────────────────────────────────
@@ -1016,8 +956,7 @@
   );
   ['cubo', 'craft'].forEach(id => sectionObserver.observe(document.getElementById(id)));
 
-  // ── Efecto UOCRA (on click) ───────────────────────────────────
-  // Letras: U(1) O(3) C(4) R(5) A(6) de CUBOCRAFT
+  // ── Efecto UOCRA ─────────────────────────────────────────────
   const uocraOrder = ['u-U', 'u-O', 'u-C', 'u-R', 'u-A'];
   const badge   = document.getElementById('uocra-badge');
   const trigger = document.getElementById('uocra-trigger');
@@ -1027,42 +966,29 @@
     if (uocraRunning) return;
     uocraRunning = true;
 
-    // Destino del vuelo: corner inferior derecho (centro del badge fijo)
-    const tX  = window.innerWidth  - 100;
-    const tY  = window.innerHeight - 70;
+    const tX = window.innerWidth  - 100;
+    const tY = window.innerHeight - 70;
 
     trigger.style.display = 'none';
 
-    // Fase 1 — iluminar U→O→C→R→A con stagger 100ms
     uocraOrder.forEach((id, i) => {
-      setTimeout(() => {
-        document.getElementById(id).classList.add('glow');
-      }, i * 100);
+      setTimeout(() => document.getElementById(id).classList.add('glow'), i * 100);
     });
 
-    // Fase 2 — volar letras hacia donde está el trigger/badge (600ms)
     setTimeout(() => {
       uocraOrder.forEach((id, i) => {
         const el = document.getElementById(id);
         const r  = el.getBoundingClientRect();
-
         const clone = document.createElement('span');
         clone.textContent = el.textContent;
         Object.assign(clone.style, {
-          position:      'fixed',
-          left:          r.left + 'px',
-          top:           r.top  + 'px',
-          fontFamily:    '"Barlow Condensed", sans-serif',
-          fontSize:      r.height + 'px',
-          fontWeight:    '800',
-          color:         '#F59E0B',
-          lineHeight:    '1',
-          zIndex:        '10000',
-          pointerEvents: 'none',
-          textShadow:    '0 0 16px rgba(245,158,11,0.9)',
+          position: 'fixed', left: r.left + 'px', top: r.top + 'px',
+          fontFamily: '"Barlow Condensed", sans-serif', fontSize: r.height + 'px',
+          fontWeight: '800', color: '#F59E0B', lineHeight: '1',
+          zIndex: '10000', pointerEvents: 'none',
+          textShadow: '0 0 16px rgba(245,158,11,0.9)',
         });
         document.body.appendChild(clone);
-
         const delay = i * 0.07;
         requestAnimationFrame(() => requestAnimationFrame(() => {
           clone.style.transition =
@@ -1077,12 +1003,8 @@
       });
     }, 600);
 
-    // Fase 3 — badge bounce (1.4s)
-    setTimeout(() => {
-      badge.classList.add('show');
-    }, 1400);
+    setTimeout(() => badge.classList.add('show'), 1400);
 
-    // Fase 4 — solo apagar glow de letras a los 10s (badge y botón quedan permanentes)
     setTimeout(() => {
       uocraOrder.forEach(id => document.getElementById(id).classList.remove('glow'));
     }, 10000);
