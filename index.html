@@ -164,7 +164,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 4rem 1.5rem 5rem;
+      padding: calc(4rem + 60px) 1.5rem 5rem;
       gap: 2.5rem;
       text-align: center;
     }
@@ -539,9 +539,288 @@
     }
     #uocra-trigger:hover { color: #F59E0B; }
     #uocra-trigger.hidden { opacity: 0; pointer-events: none; }
+
+    /* ══════════════════════════════════════════════
+       HEADER FIJO
+    ══════════════════════════════════════════════ */
+
+    .site-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: #fff;
+      height: 60px;
+      box-shadow: 0 1px 0 #E2E8F0, 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #1E3A5F;
+      letter-spacing: 0.5px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.15rem;
+      list-style: none;
+    }
+
+    .nav-link {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #4A5568;
+      text-decoration: none;
+      padding: 0.4rem 0.7rem;
+      border-radius: 0.3rem;
+      transition: color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+
+    .nav-link:hover { color: #1E3A5F; background: #F1F5F9; }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: #1E3A5F;
+      border-radius: 2px;
+      transition: transform 0.25s, opacity 0.25s;
+    }
+
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      top: 60px; left: 0; right: 0;
+      background: #fff;
+      border-top: 1px solid #E2E8F0;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      z-index: 999;
+      flex-direction: column;
+      padding: 0.5rem 0 1rem;
+    }
+
+    .mobile-nav.open { display: flex; }
+
+    .mobile-nav .nav-link {
+      padding: 0.8rem 1.5rem;
+      border-radius: 0;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 680px) {
+      .header-nav { display: none; }
+      .hamburger  { display: flex; }
+    }
+
+    /* scroll offset para header fijo */
+    section[id] { scroll-margin-top: 60px; }
+
+    /* ══════════════════════════════════════════════
+       QUIÉNES SOMOS
+    ══════════════════════════════════════════════ */
+
+    #quienes {
+      background: #F8FAFC;
+      color: #1A202C;
+      padding: 6rem 1.5rem;
+      text-align: center;
+    }
+
+    .quienes-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #1E40AF;
+    }
+
+    .quienes-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(2rem, 6vw, 2.8rem);
+      font-weight: 800;
+      color: #1E3A5F;
+      line-height: 1.05;
+    }
+
+    .quienes-text {
+      font-size: 1.05rem;
+      color: #4A5568;
+      line-height: 1.8;
+      max-width: 640px;
+    }
+
+    .quienes-cols {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .quienes-cols { grid-template-columns: 1fr; }
+    }
+
+    .quienes-col {
+      background: #fff;
+      border: 1px solid #E2E8F0;
+      border-top: 3px solid #1E40AF;
+      padding: 1.75rem 1.25rem;
+      text-align: center;
+    }
+
+    .quienes-col-icon {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 0.75rem;
+      line-height: 1;
+    }
+
+    .quienes-col-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #1E3A5F;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.45rem;
+    }
+
+    .quienes-col p {
+      font-size: 0.84rem;
+      color: #718096;
+      line-height: 1.55;
+    }
+
+    /* ══════════════════════════════════════════════
+       CONTACTO
+    ══════════════════════════════════════════════ */
+
+    #contacto {
+      background: #1E3A5F;
+      color: #fff;
+      padding: 6rem 1.5rem;
+      text-align: center;
+    }
+
+    .contacto-inner {
+      max-width: 580px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .contacto-label { color: #F59E0B; }
+
+    .contacto-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(2rem, 6vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .contacto-sub {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.72);
+      line-height: 1.65;
+      margin-top: -0.25rem;
+    }
+
+    .btn-wa-contact {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 0.9rem 2.2rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      background: #25D366;
+      color: #fff;
+      transition: filter 0.15s, transform 0.1s;
+    }
+
+    .btn-wa-contact:hover  { filter: brightness(1.1); transform: translateY(-2px); }
+    .btn-wa-contact:active { transform: translateY(0); }
+
+    .contacto-info {
+      font-size: 0.84rem;
+      color: rgba(255,255,255,0.45);
+    }
   </style>
 </head>
 <body>
+
+<!-- ══════════════════════════════════════════
+     HEADER FIJO
+══════════════════════════════════════════ -->
+<header class="site-header">
+  <div class="header-inner">
+    <a href="#hub" class="header-logo">CUBOCRAFT</a>
+    <nav aria-label="Navegación principal">
+      <ul class="header-nav">
+        <li><a class="nav-link" href="#hub">Inicio</a></li>
+        <li><a class="nav-link" href="#quienes">Quiénes Somos</a></li>
+        <li><a class="nav-link" href="#cubo">CUBO</a></li>
+        <li><a class="nav-link" href="#craft">CRAFT</a></li>
+        <li><a class="nav-link" href="#contacto">Contacto</a></li>
+      </ul>
+    </nav>
+    <button class="hamburger" id="hamburger" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Menú móvil">
+    <a class="nav-link" href="#hub"      onclick="closeMobileNav()">Inicio</a>
+    <a class="nav-link" href="#quienes"  onclick="closeMobileNav()">Quiénes Somos</a>
+    <a class="nav-link" href="#cubo"     onclick="closeMobileNav()">CUBO</a>
+    <a class="nav-link" href="#craft"    onclick="closeMobileNav()">CRAFT</a>
+    <a class="nav-link" href="#contacto" onclick="closeMobileNav()">Contacto</a>
+  </nav>
+</header>
 
 <!-- ══════════════════════════════════════════
      SECCIÓN 1 — HUB CENTRAL
@@ -576,6 +855,38 @@
         <li>6 categorías</li>
       </ul>
       <a class="hub-col-cta" href="#craft">Ver más →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     QUIÉNES SOMOS
+══════════════════════════════════════════ -->
+<section id="quienes">
+  <div class="quienes-inner">
+    <span class="section-label">Sobre nosotros</span>
+    <h2 class="quienes-title">Quiénes Somos</h2>
+    <p class="quienes-text">
+      CUBOCRAFT es una empresa especializada en soluciones técnicas para el sector
+      construcción en Argentina. Combinamos tecnología, normativas y asesoramiento
+      experto para potenciar a nuestros vendedores y clientes.
+    </p>
+    <div class="quienes-cols">
+      <div class="quienes-col">
+        <span class="quienes-col-icon">🏗️</span>
+        <div class="quienes-col-title">Experiencia técnica</div>
+        <p>Productos y conocimiento especializado para cada etapa de la obra.</p>
+      </div>
+      <div class="quienes-col">
+        <span class="quienes-col-icon">📋</span>
+        <div class="quienes-col-title">Normativas IRAM/CIRSOC</div>
+        <p>Asesoramiento basado en normativas vigentes del sector construcción.</p>
+      </div>
+      <div class="quienes-col">
+        <span class="quienes-col-icon">🤖</span>
+        <div class="quienes-col-title">Asistente IA 24/7</div>
+        <p>Consultas técnicas respondidas al instante por WhatsApp con IA.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -708,6 +1019,28 @@
 </section>
 
 <!-- ══════════════════════════════════════════
+     CONTACTO
+══════════════════════════════════════════ -->
+<section id="contacto">
+  <div class="contacto-inner">
+    <span class="section-label contacto-label">Contacto</span>
+    <h2 class="contacto-title">¿Querés trabajar con nosotros?</h2>
+    <p class="contacto-sub">
+      Contactanos por WhatsApp para consultas, pedidos o información sobre nuestros productos y servicios.
+    </p>
+    <a class="btn-wa-contact"
+       href="https://wa.me/5491134912395?text=Hola,%20quiero%20información%20de%20CUBOCRAFT"
+       target="_blank" rel="noopener noreferrer">
+      <svg class="wa-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      Escribinos por WhatsApp
+    </a>
+    <p class="contacto-info">contacto@cubocraft.com.ar &nbsp;·&nbsp; Buenos Aires, Argentina</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
      FOOTER
 ══════════════════════════════════════════ -->
 <footer>
@@ -725,6 +1058,20 @@
 <a class="btn-back" id="btn-back-craft" href="#hub">↑ Volver al inicio</a>
 
 <script>
+  // ── Hamburguesa mobile ───────────────────────────────────────
+  const hamburger = document.getElementById('hamburger');
+  const mobileNav = document.getElementById('mobile-nav');
+  function closeMobileNav() {
+    hamburger.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+    mobileNav.classList.remove('open');
+  }
+  hamburger.addEventListener('click', () => {
+    const isOpen = mobileNav.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+    hamburger.setAttribute('aria-expanded', isOpen);
+  });
+
   // ── Botón Volver ─────────────────────────────────────────────
   const sectionObserver = new IntersectionObserver(
     (entries) => {
