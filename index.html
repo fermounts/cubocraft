@@ -164,7 +164,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: calc(4rem + 60px) 1.5rem 5rem;
+      padding: 4rem 1.5rem 5rem;
       gap: 2.5rem;
       text-align: center;
     }
@@ -551,7 +551,11 @@
       background: #fff;
       height: 60px;
       box-shadow: 0 1px 0 #E2E8F0, 0 2px 10px rgba(0,0,0,0.06);
+      transform: translateY(-100%);
+      transition: transform 0.3s ease;
     }
+
+    .site-header.visible { transform: translateY(0); }
 
     .header-inner {
       max-width: 1100px;
@@ -644,7 +648,7 @@
     }
 
     /* scroll offset para header fijo */
-    section[id] { scroll-margin-top: 60px; }
+    #cubo, #craft { scroll-margin-top: 60px; }
 
     /* ══════════════════════════════════════════════
        QUIÉNES SOMOS
@@ -1086,6 +1090,20 @@
     { threshold: 0.15 }
   );
   ['cubo', 'craft'].forEach(id => sectionObserver.observe(document.getElementById(id)));
+
+  // ── Header visible solo en #cubo y #craft ────────────────────
+  const siteHeader = document.querySelector('.site-header');
+  const visibleSecs = new Set();
+  const headerVisObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(({ target, isIntersecting }) => {
+        isIntersecting ? visibleSecs.add(target.id) : visibleSecs.delete(target.id);
+      });
+      siteHeader.classList.toggle('visible', visibleSecs.size > 0);
+    },
+    { threshold: 0.1 }
+  );
+  ['cubo', 'craft'].forEach(id => headerVisObserver.observe(document.getElementById(id)));
 
   // ── Efecto UOCRA (on click) ───────────────────────────────────
   // Letras: U(1) O(3) C(4) R(5) A(6) de CUBOCRAFT
