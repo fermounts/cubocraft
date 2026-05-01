@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400">
+
+  <!-- ─── CEMENT MIXER — left side ──────────────────────────── -->
+  <g transform="translate(28,38)">
+    <!-- drum body -->
+    <ellipse cx="100" cy="118" rx="70" ry="82" fill="#1E3A5F"/>
+    <!-- drum opening ring (inner ellipse) -->
+    <ellipse cx="100" cy="118" rx="57" ry="67"
+             fill="none" stroke="#F59E0B" stroke-width="2.5"/>
+    <!-- mixing blades inside -->
+    <line x1="52" y1="80"  x2="148" y2="156"
+          stroke="#F59E0B" stroke-width="2.2" opacity="0.55"/>
+    <line x1="148" y1="80" x2="52"  y2="156"
+          stroke="#F59E0B" stroke-width="2.2" opacity="0.55"/>
+    <!-- center hub -->
+    <circle cx="100" cy="118" r="9" fill="#F59E0B"/>
+    <!-- outer drum rim -->
+    <ellipse cx="100" cy="118" rx="70" ry="82"
+             fill="none" stroke="#F59E0B" stroke-width="2"/>
+    <!-- axle to gearbox -->
+    <line x1="100" y1="118" x2="175" y2="118"
+          stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>
+    <!-- pour chute (spout) -->
+    <path d="M 166 104 L 205 82 L 212 95 L 170 120 Z"
+          fill="#F59E0B" opacity="0.75"/>
+    <!-- motor / gearbox -->
+    <rect x="128" y="172" width="44" height="20" rx="3"
+          fill="#F59E0B" opacity="0.85"/>
+    <!-- chassis bar -->
+    <rect x="22"  y="196" width="162" height="13" rx="5"
+          fill="#F59E0B"/>
+    <!-- legs -->
+    <rect x="27"  y="190" width="14" height="38" rx="3" fill="#F59E0B"/>
+    <rect x="163" y="190" width="14" height="38" rx="3" fill="#F59E0B"/>
+    <!-- wheels -->
+    <circle cx="168" cy="240" r="21"
+            fill="none" stroke="#1E3A5F" stroke-width="6"/>
+    <circle cx="168" cy="240" r="7" fill="#1E3A5F"/>
+    <circle cx="38"  cy="240" r="15"
+            fill="none" stroke="#1E3A5F" stroke-width="5"/>
+    <circle cx="38"  cy="240" r="5" fill="#1E3A5F"/>
+  </g>
+
+  <!-- ─── STEEL FRAME C-CHANNEL profile — upper right ───────── -->
+  <g transform="translate(396,28)">
+    <!-- web (vertical back plate) -->
+    <rect x="0"  y="0" width="16" height="130" fill="#1E3A5F"/>
+    <!-- top flange -->
+    <rect x="0"  y="0" width="72" height="16"  fill="#1E3A5F"/>
+    <!-- bottom flange -->
+    <rect x="0" y="114" width="72" height="16" fill="#1E3A5F"/>
+    <!-- orange dimension lines -->
+    <line x1="86" y1="0"   x2="86"  y2="130" stroke="#F59E0B" stroke-width="1.5"/>
+    <line x1="81" y1="0"   x2="91"  y2="0"   stroke="#F59E0B" stroke-width="1.5"/>
+    <line x1="81" y1="130" x2="91"  y2="130" stroke="#F59E0B" stroke-width="1.5"/>
+    <line x1="0"  y1="148" x2="72"  y2="148" stroke="#F59E0B" stroke-width="1.5"/>
+    <line x1="0"  y1="143" x2="0"   y2="153" stroke="#F59E0B" stroke-width="1.5"/>
+    <line x1="72" y1="143" x2="72"  y2="153" stroke="#F59E0B" stroke-width="1.5"/>
+    <!-- flange thickness accent -->
+    <line x1="16" y1="16" x2="72" y2="16"
+          stroke="#F59E0B" stroke-width="0.8" opacity="0.4"/>
+    <line x1="16" y1="114" x2="72" y2="114"
+          stroke="#F59E0B" stroke-width="0.8" opacity="0.4"/>
+  </g>
+
+  <!-- ─── CEMENT BAGS — lower center ────────────────────────── -->
+  <g transform="translate(232,208)">
+    <!-- bag body (slightly tapered) -->
+    <path d="M 10 32 L 0 145 L 108 145 L 98 32 Z" fill="#1E3A5F"/>
+    <!-- top gather/neck -->
+    <path d="M 10 32 Q 54 14 98 32 L 90 22 Q 54 6 18 22 Z"
+          fill="#1E3A5F"/>
+    <!-- tie -->
+    <path d="M 34 16 Q 54 7 74 16"
+          stroke="#F59E0B" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <!-- label border -->
+    <rect x="7"  y="50" width="95" height="52" rx="2"
+          fill="#F59E0B" opacity="0.1"/>
+    <rect x="7"  y="50" width="95" height="52" rx="2"
+          fill="none" stroke="#F59E0B" stroke-width="1.5"/>
+    <!-- label text lines -->
+    <line x1="17" y1="64"  x2="92" y2="64"
+          stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+    <line x1="22" y1="76"  x2="87" y2="76"
+          stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round" opacity="0.55"/>
+    <line x1="28" y1="88"  x2="81" y2="88"
+          stroke="#F59E0B" stroke-width="1"   stroke-linecap="round" opacity="0.4"/>
+    <!-- crease lines -->
+    <line x1="13" y1="36" x2="7"   y2="136"
+          stroke="#F59E0B" stroke-width="0.8" opacity="0.18"/>
+    <line x1="96" y1="36" x2="102" y2="136"
+          stroke="#F59E0B" stroke-width="0.8" opacity="0.18"/>
+    <!-- bottom fold -->
+    <path d="M 0 140 Q 54 150 108 140"
+          stroke="#F59E0B" stroke-width="1" fill="none" opacity="0.35"/>
+  </g>
+
+  <!-- ─── STACKED BRICKS — lower right ──────────────────────── -->
+  <g transform="translate(358,248)">
+    <!-- row 0 bottom (navy) -->
+    <rect x="0"   y="92" width="64" height="22" rx="2"
+          fill="#1E3A5F" stroke="#F59E0B" stroke-width="1.5"/>
+    <rect x="68"  y="92" width="64" height="22" rx="2"
+          fill="#1E3A5F" stroke="#F59E0B" stroke-width="1.5"/>
+    <rect x="136" y="92" width="64" height="22" rx="2"
+          fill="#1E3A5F" stroke="#F59E0B" stroke-width="1.5"/>
+    <!-- row 1 offset (navy) -->
+    <rect x="32"  y="66" width="64" height="22" rx="2"
+          fill="#1E3A5F" stroke="#F59E0B" stroke-width="1.5"/>
+    <rect x="100" y="66" width="64" height="22" rx="2"
+          fill="#1E3A5F" stroke="#F59E0B" stroke-width="1.5"/>
+    <rect x="168" y="66" width="32" height="22" rx="2"
+          fill="#1E3A5F" stroke="#F59E0B" stroke-width="1.5"/>
+    <!-- row 2 (navy) -->
+    <rect x="0"   y="40" width="64" height="22" rx="2"
+          fill="#1E3A5F" stroke="#F59E0B" stroke-width="1.5"/>
+    <rect x="68"  y="40" width="64" height="22" rx="2"
+          fill="#1E3A5F" stroke="#F59E0B" stroke-width="1.5"/>
+    <rect x="136" y="40" width="64" height="22" rx="2"
+          fill="#1E3A5F" stroke="#F59E0B" stroke-width="1.5"/>
+    <!-- row 3 top (orange accent) -->
+    <rect x="32"  y="14" width="64" height="22" rx="2"
+          fill="#F59E0B" stroke="#1E3A5F" stroke-width="1.5" opacity="0.9"/>
+    <rect x="100" y="14" width="64" height="22" rx="2"
+          fill="#F59E0B" stroke="#1E3A5F" stroke-width="1.5" opacity="0.9"/>
+    <rect x="168" y="14" width="32" height="22" rx="2"
+          fill="#F59E0B" stroke="#1E3A5F" stroke-width="1.5" opacity="0.9"/>
+  </g>
+
+  <!-- ─── technical divider lines ─────────────────────────────── -->
+  <line x1="300" y1="22"  x2="300" y2="380"
+        stroke="#1E3A5F" stroke-width="0.7" opacity="0.2"/>
+  <line x1="25"  y1="200" x2="578" y2="200"
+        stroke="#1E3A5F" stroke-width="0.7" opacity="0.2"/>
+
+</svg>

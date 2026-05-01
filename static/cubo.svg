@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400">
+
+  <!-- ─── HARD HAT — upper left ─────────────────────────────── -->
+  <g>
+    <!-- dome -->
+    <path d="M 72 160 C 72 72 122 45 152 43 C 182 45 232 72 232 160 Z"
+          fill="#1E40AF"/>
+    <!-- front stripe -->
+    <path d="M 118 55 Q 152 49 186 55 L 183 71 Q 152 65 121 71 Z"
+          fill="#4A5568" opacity="0.75"/>
+    <!-- brim -->
+    <path d="M 56 160 L 248 160 Q 248 172 152 172 Q 56 172 56 160 Z"
+          fill="#4A5568"/>
+    <!-- suspension band (dashed arc inside) -->
+    <path d="M 88 160 C 88 108 116 80 152 76 C 188 80 216 108 216 160"
+          fill="none" stroke="#60A5FA" stroke-width="1.5"
+          stroke-dasharray="5 3" opacity="0.45"/>
+  </g>
+
+  <!-- ─── SAFETY GLASSES — upper right ─────────────────────── -->
+  <g transform="translate(318,68)">
+    <!-- left lens tint + frame -->
+    <rect x="0"   y="0" width="88" height="58" rx="12"
+          fill="#1E40AF" opacity="0.12"/>
+    <rect x="0"   y="0" width="88" height="58" rx="12"
+          fill="none" stroke="#1E40AF" stroke-width="3.2"/>
+    <!-- right lens tint + frame -->
+    <rect x="102" y="0" width="88" height="58" rx="12"
+          fill="#1E40AF" opacity="0.12"/>
+    <rect x="102" y="0" width="88" height="58" rx="12"
+          fill="none" stroke="#1E40AF" stroke-width="3.2"/>
+    <!-- bridge -->
+    <path d="M 88 29 Q 95 23 102 29"
+          stroke="#4A5568" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <!-- left arm -->
+    <line x1="0"   y1="29" x2="-48" y2="36"
+          stroke="#4A5568" stroke-width="4" stroke-linecap="round"/>
+    <!-- right arm -->
+    <line x1="190" y1="29" x2="238" y2="36"
+          stroke="#4A5568" stroke-width="4" stroke-linecap="round"/>
+    <!-- lens glare details -->
+    <line x1="12" y1="13" x2="34" y2="13"
+          stroke="#93C5FD" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+    <line x1="114" y1="13" x2="136" y2="13"
+          stroke="#93C5FD" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+  </g>
+
+  <!-- ─── BOOT — lower left, right-foot side view ───────────── -->
+  <g transform="translate(42,210)">
+    <!-- upper shaft -->
+    <rect x="32" y="0" width="72" height="98" rx="5" fill="#4A5568"/>
+    <!-- foot body -->
+    <path d="M 18 92 L 18 118 L 188 118 L 188 98
+             Q 188 87 177 87 L 108 87 L 108 92
+             L 98 92 L 98 87 L 38 87 Q 27 87 27 92 Z"
+          fill="#4A5568"/>
+    <!-- steel toe cap -->
+    <path d="M 142 98 L 188 98 L 188 118 L 142 118
+             Q 122 118 122 108 Q 122 98 142 98 Z"
+          fill="#1E40AF"/>
+    <!-- toe cap highlight -->
+    <path d="M 144 101 Q 167 96 185 101"
+          stroke="#60A5FA" stroke-width="1.5" fill="none" opacity="0.55"/>
+    <!-- sole -->
+    <rect x="13"  y="116" width="178" height="9" rx="4" fill="#1E2D4A"/>
+    <!-- lace panel -->
+    <rect x="34" y="4" width="68" height="82" rx="3" fill="#374151"/>
+    <!-- laces -->
+    <line x1="40" y1="19" x2="96" y2="19" stroke="#93C5FD" stroke-width="1.5"/>
+    <line x1="40" y1="32" x2="96" y2="32" stroke="#93C5FD" stroke-width="1.5"/>
+    <line x1="40" y1="45" x2="96" y2="45" stroke="#93C5FD" stroke-width="1.5"/>
+    <line x1="40" y1="58" x2="96" y2="58" stroke="#93C5FD" stroke-width="1.5"/>
+    <line x1="40" y1="71" x2="96" y2="71" stroke="#93C5FD" stroke-width="1.5"/>
+    <!-- eyelets -->
+    <circle cx="40" cy="19" r="2.5" fill="#1E40AF"/>
+    <circle cx="96" cy="19" r="2.5" fill="#1E40AF"/>
+    <circle cx="40" cy="32" r="2.5" fill="#1E40AF"/>
+    <circle cx="96" cy="32" r="2.5" fill="#1E40AF"/>
+    <circle cx="40" cy="45" r="2.5" fill="#1E40AF"/>
+    <circle cx="96" cy="45" r="2.5" fill="#1E40AF"/>
+    <circle cx="40" cy="58" r="2.5" fill="#1E40AF"/>
+    <circle cx="96" cy="58" r="2.5" fill="#1E40AF"/>
+    <circle cx="40" cy="71" r="2.5" fill="#1E40AF"/>
+    <circle cx="96" cy="71" r="2.5" fill="#1E40AF"/>
+  </g>
+
+  <!-- ─── GLOVE — lower right, front view right hand ─────────── -->
+  <g transform="translate(333,182)">
+    <!-- index finger -->
+    <rect x="26"  y="0"  width="28" height="52" rx="13" fill="#4A5568"/>
+    <!-- middle finger (tallest) -->
+    <rect x="57"  y="-8" width="28" height="60" rx="13" fill="#4A5568"/>
+    <!-- ring finger -->
+    <rect x="88"  y="0"  width="28" height="52" rx="13" fill="#4A5568"/>
+    <!-- pinky -->
+    <rect x="119" y="13" width="22" height="40" rx="10" fill="#4A5568"/>
+    <!-- thumb -->
+    <path d="M 26 68 Q 3 64 2 46 Q 0 29 13 26 Q 25 23 27 42 Z"
+          fill="#4A5568"/>
+    <!-- palm -->
+    <rect x="10" y="47" width="138" height="108" rx="8" fill="#4A5568"/>
+    <!-- knuckle accent lines -->
+    <path d="M 30 50 Q 40 44 53 50"
+          stroke="#1E40AF" stroke-width="2" fill="none"/>
+    <path d="M 61 43 Q 71 37 83 43"
+          stroke="#1E40AF" stroke-width="2" fill="none"/>
+    <path d="M 92 50 Q 102 44 114 50"
+          stroke="#1E40AF" stroke-width="2" fill="none"/>
+    <!-- palm reinforcement stitching -->
+    <rect x="28" y="85" width="92" height="52" rx="5"
+          fill="none" stroke="#1E40AF" stroke-width="1.5"
+          stroke-dasharray="4 2.5" opacity="0.5"/>
+    <!-- cuff -->
+    <rect x="10" y="150" width="138" height="30" rx="6"
+          fill="#1E40AF" opacity="0.45"/>
+    <rect x="10" y="150" width="138" height="30" rx="6"
+          fill="none" stroke="#1E40AF" stroke-width="2"/>
+    <!-- cuff stitch -->
+    <line x1="18" y1="165" x2="140" y2="165"
+          stroke="#60A5FA" stroke-width="1"
+          stroke-dasharray="5 3" opacity="0.55"/>
+  </g>
+
+  <!-- ─── technical divider lines ─────────────────────────────── -->
+  <line x1="300" y1="25"  x2="300" y2="378"
+        stroke="#4A5568" stroke-width="0.7" opacity="0.18"/>
+  <line x1="28"  y1="200" x2="574" y2="200"
+        stroke="#4A5568" stroke-width="0.7" opacity="0.18"/>
+
+</svg>
