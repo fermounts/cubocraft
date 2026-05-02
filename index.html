@@ -298,6 +298,7 @@
       padding: 0.35rem 0.9rem;
       border-radius: 0.3rem;
       text-decoration: none;
+      cursor: pointer;
       transition: background 0.15s, color 0.15s;
       align-self: flex-start;
     }
@@ -453,21 +454,8 @@
     /* Columna izquierda — carrusel */
     .sec-carousel-col {
       background: var(--off);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem 1rem;
-      gap: 0.75rem;
-      overflow: hidden;
-    }
-
-    /* Carrusel ocupa máximo 40% del alto disponible del body */
-    .sec-carousel-wrap {
       position: relative;
-      width: 100%;
-      height: calc((100vh - 284px) * 0.4);
-      flex-shrink: 0;
+      overflow: hidden;
     }
 
     .sec-carousel-inner {
@@ -475,20 +463,19 @@
       inset: 0;
     }
 
+    /* Cada slide oculto por defecto; solo .active es visible */
     .sec-slide {
+      display: none;
       position: absolute;
       inset: 0;
-      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      opacity: 0;
-      transition: opacity 0.8s ease;
       pointer-events: none;
     }
 
     .sec-slide.active {
-      opacity: 1;
+      display: flex;
       pointer-events: auto;
     }
 
@@ -504,11 +491,15 @@
     #cubo  .sec-slide-label { color: var(--blue); }
     #craft .sec-slide-label { color: var(--navy); }
 
-    /* Dots (en flujo, debajo del wrap) */
+    /* Dots */
     .sec-dots {
+      position: absolute;
+      bottom: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
       gap: 0.5rem;
-      flex-shrink: 0;
+      z-index: 2;
     }
 
     .sec-dot {
@@ -609,8 +600,7 @@
     /* Mobile cubo/craft */
     @media (max-width: 640px) {
       .sec-body { grid-template-columns: 1fr; overflow-y: auto; }
-      .sec-carousel-col { padding: 1rem; flex-shrink: 0; justify-content: flex-start; }
-      .sec-carousel-wrap { height: 180px; }
+      .sec-carousel-col { flex: 0 0 200px; }
       .sec-info-col { padding: 1.5rem; }
       .sec-zocalo-img img { height: 130px; }
       .sec-zocalo-band span { font-size: 1.6rem; }
