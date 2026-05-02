@@ -11,24 +11,22 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --steel:    #4A5568;
-      --navy:     #1E3A5F;
-      --blue:     #1E40AF;
-      --orange:   #F59E0B;
-      --green:    #25D366;
-      --white:    #FFFFFF;
-      --off-white:#F8FAFC;
+      --blue:   #1E40AF;
+      --orange: #F59E0B;
+      --navy:   #1E3A5F;
+      --green:  #22C55E;
+      --white:  #FFFFFF;
+      --off:    #F8FAFC;
+      --border: #E2E8F0;
     }
 
     html { scroll-behavior: smooth; }
 
     body {
       font-family: 'Inter', system-ui, sans-serif;
-      color: var(--white);
-      line-height: 1.6;
+      color: #1A202C;
+      line-height: 1.5;
     }
-
-    /* ── Utility ───────────────────────────────────── */
 
     .sr-only {
       position: absolute; width: 1px; height: 1px;
@@ -36,402 +34,719 @@
       clip: rect(0,0,0,0); white-space: nowrap; border: 0;
     }
 
-    /* WhatsApp SVG icon */
-    .wa-icon {
-      width: 22px; height: 22px; fill: currentColor; flex-shrink: 0;
+    .wa-icon { width: 22px; height: 22px; fill: currentColor; flex-shrink: 0; }
+
+    /* ══════════════════════════════════════════════
+       HEADER FIJO (todas las páginas)
+    ══════════════════════════════════════════════ */
+
+    .site-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: #fff;
+      height: 60px;
+      border-bottom: 1px solid var(--border);
     }
 
-    /* Stat blocks shared */
-    .stats {
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      height: 100%;
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: 0.5px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.1rem;
+      list-style: none;
+    }
+
+    .nav-link {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #4A5568;
+      text-decoration: none;
+      padding: 0.4rem 0.7rem;
+      border-radius: 0.3rem;
+      transition: color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+
+    .nav-link:hover { color: var(--navy); background: #F1F5F9; }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
       justify-content: center;
-      gap: 1rem;
-      margin-top: 0.5rem;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
     }
 
-    .stat {
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--navy);
+      border-radius: 2px;
+      transition: transform 0.25s, opacity 0.25s;
+    }
+
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      top: 60px; left: 0; right: 0;
+      background: #fff;
+      border-top: 1px solid var(--border);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      z-index: 999;
+      flex-direction: column;
+      padding: 0.5rem 0 1rem;
+    }
+
+    .mobile-nav.open { display: flex; }
+
+    .mobile-nav .nav-link {
+      padding: 0.8rem 1.5rem;
+      border-radius: 0;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 680px) {
+      .header-nav { display: none; }
+      .hamburger  { display: flex; }
+    }
+
+    /* scroll offset */
+    #hub, #cubo, #craft, #quienes, #contacto { scroll-margin-top: 60px; }
+
+    /* ══════════════════════════════════════════════
+       UOCRA — letras y badge
+    ══════════════════════════════════════════════ */
+
+    .cc-l {
+      display: inline;
+      transition: color 0.3s ease, text-shadow 0.3s ease;
+    }
+    .cc-l.glow {
+      color: #F59E0B;
+      text-shadow: 0 0 18px rgba(245,158,11,0.9), 0 0 40px rgba(245,158,11,0.5);
+    }
+
+    @keyframes badgeBounce {
+      0%   { transform: scale(0.3) translateY(30px); opacity: 0; }
+      60%  { transform: scale(1.15) translateY(-6px); opacity: 1; }
+      80%  { transform: scale(0.95) translateY(2px); }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .uocra-badge {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      background: rgba(15,35,65,0.96);
+      border: 2px solid #F59E0B;
+      border-radius: 0.85rem;
+      padding: 0.7rem 2rem 0.85rem;
       text-align: center;
-      padding: 1rem 1.5rem;
-      border-radius: 0.75rem;
-      min-width: 130px;
+      user-select: none;
+      box-shadow: 0 0 24px rgba(245,158,11,0.35), 0 8px 32px rgba(0,0,0,0.4);
     }
 
-    .stat-num {
+    .uocra-badge.show {
+      display: flex;
+      animation: badgeBounce 0.55s cubic-bezier(0.34,1.2,0.64,1) forwards;
+    }
+
+    .uocra-powered {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.58rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .uocra-text {
       font-family: 'Barlow Condensed', sans-serif;
       font-size: 2rem;
       font-weight: 800;
+      color: #F59E0B;
+      letter-spacing: 0.08em;
       line-height: 1;
+      text-shadow: 0 0 12px rgba(245,158,11,0.6);
     }
 
-    .stat-label {
-      font-size: 0.78rem;
-      font-weight: 500;
-      margin-top: 0.3rem;
-      opacity: 0.85;
-    }
-
-    /* Feature columns */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-      width: 100%;
-    }
-
-    @media (max-width: 640px) {
-      .features { grid-template-columns: 1fr; }
-    }
-
-    .feature {
-      padding: 1.25rem;
-      border-radius: 0.75rem;
-      text-align: center;
-    }
-
-    .feature-icon {
-      font-size: 2rem;
-      margin-bottom: 0.6rem;
-      display: block;
-    }
-
-    .feature h3 {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-bottom: 0.4rem;
-    }
-
-    .feature p {
-      font-size: 0.82rem;
-      opacity: 0.8;
-      line-height: 1.5;
-    }
-
-    /* CTA button */
-    .btn-wa {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.6rem;
-      font-family: 'Inter', sans-serif;
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 0.9rem 2.2rem;
-      border-radius: 0.75rem;
-      text-decoration: none;
-      transition: filter 0.15s, transform 0.1s;
-      cursor: pointer;
+    #uocra-trigger {
+      background: none;
       border: none;
-    }
-
-    .btn-wa:hover  { filter: brightness(1.12); transform: translateY(-2px); }
-    .btn-wa:active { transform: translateY(0); }
-
-    /* Back button */
-    .btn-back {
-      position: fixed;
-      bottom: 1.5rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255,255,255,0.15);
-      color: var(--white);
-      border: 1px solid rgba(255,255,255,0.3);
-      backdrop-filter: blur(8px);
       font-family: 'Inter', sans-serif;
-      font-size: 0.82rem;
-      font-weight: 600;
-      padding: 0.55rem 1.2rem;
-      border-radius: 9999px;
-      text-decoration: none;
-      display: none;
-      align-items: center;
-      gap: 0.4rem;
-      z-index: 100;
-      transition: background 0.15s;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #9CA3AF;
+      cursor: pointer;
+      padding: 0;
+      letter-spacing: 0.02em;
+      transition: color 0.2s;
     }
-
-    .btn-back:hover { background: rgba(255,255,255,0.25); }
+    #uocra-trigger:hover { color: #F59E0B; }
 
     /* ══════════════════════════════════════════════
-       SECCIÓN 1 — HUB
+       PÁGINA 1 — HUB
     ══════════════════════════════════════════════ */
 
     #hub {
-      min-height: 100vh;
-      background: var(--white);
-      color: #1A202C;
+      height: 100vh;
+      background: #fff;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 4rem 1.5rem 5rem;
-      gap: 2.5rem;
-      text-align: center;
+      padding-top: 60px;
+      overflow: hidden;
     }
 
-    .hub-logo {
+    .hub-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* Columna izquierda */
+    .hub-left {
+      padding: 2.5rem 2rem 2rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1.25rem;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .hub-title {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(3rem, 10vw, 5.5rem);
+      font-size: clamp(2.5rem, 5.5vw, 4.5rem);
       font-weight: 800;
-      color: #1E3A5F;
+      color: var(--navy);
       letter-spacing: -1px;
       line-height: 1;
     }
 
-    .hub-tagline {
-      font-size: clamp(1rem, 3vw, 1.25rem);
-      color: #4A5568;
-      font-weight: 500;
-      max-width: 420px;
+    .hub-subtitle {
+      font-size: 1rem;
+      color: #718096;
+      font-weight: 400;
+      margin-top: -0.5rem;
     }
 
-    .hub-divider {
-      width: 100%;
-      max-width: 760px;
-      border: none;
-      border-top: 1px solid #E2E8F0;
+    .hub-block {
+      padding: 0.9rem 1rem 0.9rem 1.2rem;
+      border-left: 4px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
     }
 
-    .hub-columns {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      width: 100%;
-      max-width: 760px;
-      border: 1px solid #E2E8F0;
-    }
+    .hub-block.cubo-block  { border-left-color: var(--blue); }
+    .hub-block.craft-block { border-left-color: var(--orange); }
 
-    @media (max-width: 560px) {
-      .hub-columns { grid-template-columns: 1fr; }
-      .hub-col.cubo-col { border-right: none; border-bottom: 1px solid #E2E8F0; }
-    }
-
-    .hub-col {
-      padding: 2.5rem 2rem 2.5rem;
-      text-align: left;
-      border-top: 4px solid transparent;
-    }
-
-    .hub-col.cubo-col  { border-top-color: #1E40AF; border-right: 1px solid #E2E8F0; }
-    .hub-col.craft-col { border-top-color: #F59E0B; }
-
-    .hub-col-name {
+    .hub-block-name {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 2.2rem;
+      font-size: 1.4rem;
       font-weight: 800;
-      letter-spacing: 0.5px;
       color: #1A202C;
       line-height: 1;
     }
 
-    .hub-col-sub {
+    .hub-block-desc {
+      font-size: 0.82rem;
+      color: #4A5568;
+    }
+
+    .hub-block-btn {
+      display: inline-block;
+      margin-top: 0.4rem;
       font-size: 0.78rem;
       font-weight: 600;
-      color: #718096;
-      margin-top: 0.35rem;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-    }
-
-    .hub-col-data {
-      margin-top: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.55rem;
-      list-style: none;
-    }
-
-    .hub-col-data li {
-      font-size: 0.9rem;
-      color: #4A5568;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 0.55rem;
-    }
-
-    .hub-col-data li::before {
-      content: '';
-      display: inline-block;
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .cubo-col .hub-col-data li::before  { background: #1E40AF; }
-    .craft-col .hub-col-data li::before { background: #F59E0B; }
-
-    .hub-col-cta {
-      display: inline-block;
-      margin-top: 2rem;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 0.5rem 1.1rem;
+      padding: 0.35rem 0.9rem;
       border-radius: 0.3rem;
       text-decoration: none;
-      letter-spacing: 0.01em;
       transition: background 0.15s, color 0.15s;
+      align-self: flex-start;
     }
 
-    .cubo-col  .hub-col-cta { color: #1E40AF; border: 1.5px solid #1E40AF; }
-    .craft-col .hub-col-cta { color: #B45309; border: 1.5px solid #F59E0B; }
-    .cubo-col  .hub-col-cta:hover { background: #1E40AF; color: #fff; }
-    .craft-col .hub-col-cta:hover { background: #F59E0B; color: #1A202C; }
+    .cubo-block  .hub-block-btn { color: var(--blue);  border: 1.5px solid var(--blue); }
+    .craft-block .hub-block-btn { color: #92400E; border: 1.5px solid var(--orange); }
+    .cubo-block  .hub-block-btn:hover { background: var(--blue);   color: #fff; }
+    .craft-block .hub-block-btn:hover { background: var(--orange); color: #1A202C; }
+
+    .hub-sep {
+      border: none;
+      border-top: 1px solid var(--border);
+    }
+
+    .hub-wa {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-wa-hub {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 0.88rem;
+      padding: 0.6rem 1.3rem;
+      border-radius: 0.4rem;
+      text-decoration: none;
+      background: var(--green);
+      color: #fff;
+      flex-shrink: 0;
+      transition: filter 0.15s;
+    }
+
+    .btn-wa-hub:hover { filter: brightness(1.08); }
+
+    .hub-wa-text {
+      font-size: 0.84rem;
+      color: #718096;
+    }
+
+    /* Columna derecha */
+    .hub-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: var(--off);
+      overflow: hidden;
+    }
+
+    .hub-placeholder {
+      width: 100%;
+      height: 100%;
+      max-height: 460px;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #EDF2F7;
+      color: #A0AEC0;
+      font-size: 0.88rem;
+      font-weight: 500;
+      text-align: center;
+      padding: 1rem;
+    }
+
+    /* Footer mini hub */
+    .hub-footer-mini {
+      flex: 0 0 44px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 1.5rem;
+      background: var(--off);
+      border-top: 1px solid var(--border);
+    }
+
+    /* Mobile hub */
+    @media (max-width: 640px) {
+      .hub-body { grid-template-columns: 1fr; overflow-y: auto; }
+      .hub-right { display: none; }
+      .hub-left  { padding: 1.5rem; border-right: none; justify-content: flex-start; }
+    }
 
     /* ══════════════════════════════════════════════
-       SECCIÓN 2 — CUBO
+       PÁGINAS 2/3 — CUBO y CRAFT
     ══════════════════════════════════════════════ */
 
     #cubo, #craft {
       height: 100vh;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
+      padding-top: 60px;
+      overflow: hidden;
     }
 
-    #cubo  { background: var(--steel); }
-    #craft { background: var(--navy); }
+    #cubo  { background: #EEF2FF; }
+    #craft { background: #FFFBEB; }
 
-    .sec-header {
-      flex: 0 0 auto;
+    /* Zócalo (70px) */
+    .sec-zocalo {
+      flex: 0 0 70px;
       display: flex;
       align-items: stretch;
-      height: 80px;
     }
 
-    .sec-header-logo {
+    .sec-zocalo-img {
       flex: 0 0 auto;
       display: flex;
       align-items: center;
       padding: 0 1rem;
-      background: rgba(0,0,0,0.25);
+      background: rgba(0,0,0,0.07);
     }
 
-    .sec-header-logo img {
-      height: 56px;
+    .sec-zocalo-img img {
+      height: 54px;
       width: auto;
       object-fit: contain;
       display: block;
     }
 
-    .sec-header-band {
+    .sec-zocalo-band {
       flex: 1;
       display: flex;
       align-items: center;
       padding: 0 1.5rem;
     }
 
-    #cubo  .sec-header-band { background: #1E40AF; }
-    #craft .sec-header-band { background: #F59E0B; }
+    #cubo  .sec-zocalo-band { background: var(--blue); }
+    #craft .sec-zocalo-band { background: var(--orange); }
 
-    .sec-header-band span {
+    .sec-zocalo-band span {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(1rem, 3vw, 1.4rem);
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
       font-weight: 700;
       letter-spacing: 0.04em;
-      text-transform: uppercase;
     }
 
-    #cubo  .sec-header-band span { color: #fff; }
-    #craft .sec-header-band span { color: #1A202C; }
+    #cubo  .sec-zocalo-band span { color: #fff; }
+    #craft .sec-zocalo-band span { color: #1A202C; }
 
-    .sec-carousel {
-      flex: 1 1 0;
+    /* Body (2 columnas 50/50) */
+    .sec-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* Columna izquierda — carrusel */
+    .sec-carousel-col {
+      background: var(--off);
       position: relative;
       overflow: hidden;
     }
 
-    .sec-carousel .slide {
+    .sec-carousel-inner {
       position: absolute;
       inset: 0;
+    }
+
+    .sec-slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       opacity: 0;
       transition: opacity 0.8s ease;
       pointer-events: none;
     }
 
-    .sec-carousel .slide.active {
+    .sec-slide.active {
       opacity: 1;
       pointer-events: auto;
     }
 
-    .sec-carousel .slide img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .sec-footer {
-      flex: 0 0 auto;
-      display: flex;
-      align-items: center;
-      padding: 0 1rem;
-      height: 72px;
-      background: rgba(0,0,0,0.3);
-    }
-
-    .sec-footer-features {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      min-width: 0;
-    }
-
-    .sec-feat {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-      min-width: 0;
-      padding: 0 0.6rem;
-      border-right: 1px solid rgba(255,255,255,0.12);
-    }
-
-    .sec-feat:last-child { border-right: none; }
-
-    .sec-feat-icon { font-size: 1.15rem; flex: 0 0 auto; }
-
-    .sec-feat-text {
-      font-size: 0.78rem;
-      font-weight: 600;
+    .sec-slide-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+      font-weight: 700;
+      text-align: center;
+      padding: 1rem 1.5rem;
       line-height: 1.2;
-      opacity: 0.9;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
-    #cubo  .sec-feat-text { color: #E0EAFF; }
-    #craft .sec-feat-text { color: #1A202C; }
+    #cubo  .sec-slide-label { color: var(--blue); }
+    #craft .sec-slide-label { color: var(--navy); }
 
-    .sec-footer-wa {
-      flex: 0 0 auto;
+    /* Dots */
+    .sec-dots {
+      position: absolute;
+      bottom: 1.25rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.5rem;
+      z-index: 2;
+    }
+
+    .sec-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #CBD5E0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #cubo  .sec-dot.active { background: var(--blue); }
+    #craft .sec-dot.active { background: var(--orange); }
+
+    /* Columna derecha — info */
+    .sec-info-col {
+      padding: 2rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1.4rem;
+      overflow: hidden;
+      background: #fff;
+      border-left: 1px solid var(--border);
+    }
+
+    .sec-info-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(1.3rem, 2.8vw, 1.75rem);
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.15;
+    }
+
+    .sec-info-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .sec-info-list li {
+      font-size: 0.92rem;
+      color: #4A5568;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .sec-info-list li::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    #cubo  .sec-info-list li::before { background: var(--blue); }
+    #craft .sec-info-list li::before { background: var(--orange); }
+
+    .btn-wa-sec {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.55rem 1.1rem;
-      border-radius: 9999px;
+      gap: 0.55rem;
       font-weight: 700;
-      font-size: 0.82rem;
+      font-size: 0.95rem;
+      padding: 0.8rem 1.8rem;
+      border-radius: 0.5rem;
       text-decoration: none;
-      white-space: nowrap;
-      margin-left: 1rem;
-      background: #22C55E;
+      background: var(--green);
       color: #fff;
+      align-self: flex-start;
+      transition: filter 0.15s, transform 0.1s;
+    }
+
+    .btn-wa-sec:hover  { filter: brightness(1.08); transform: translateY(-1px); }
+    .btn-wa-sec:active { transform: translateY(0); }
+
+    /* Footer mini sec */
+    .sec-footer-mini {
+      flex: 0 0 44px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 1.5rem;
+      background: #fff;
+      border-top: 1px solid var(--border);
+    }
+
+    .sec-footer-mini span {
+      font-size: 0.75rem;
+      color: #9CA3AF;
+      font-weight: 500;
+    }
+
+    /* Mobile cubo/craft */
+    @media (max-width: 640px) {
+      .sec-body { grid-template-columns: 1fr; overflow-y: auto; }
+      .sec-carousel-col { height: 220px; position: relative; flex-shrink: 0; }
+      .sec-info-col { padding: 1.5rem; }
     }
 
     /* ══════════════════════════════════════════════
-       SECCIÓN 3 — CRAFT
+       QUIÉNES SOMOS
     ══════════════════════════════════════════════ */
 
+    #quienes {
+      background: var(--off);
+      color: #1A202C;
+      padding: 6rem 1.5rem;
+      text-align: center;
+    }
+
+    .quienes-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+
+    .quienes-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(2rem, 6vw, 2.8rem);
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1.05;
+    }
+
+    .quienes-text {
+      font-size: 1.05rem;
+      color: #4A5568;
+      line-height: 1.8;
+      max-width: 640px;
+    }
+
+    .quienes-cols {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      width: 100%;
+    }
+
+    @media (max-width: 600px) {
+      .quienes-cols { grid-template-columns: 1fr; }
+    }
+
+    .quienes-col {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--blue);
+      padding: 1.75rem 1.25rem;
+      text-align: center;
+    }
+
+    .quienes-col-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--navy);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.45rem;
+    }
+
+    .quienes-col p {
+      font-size: 0.84rem;
+      color: #718096;
+      line-height: 1.55;
+    }
+
+    /* ══════════════════════════════════════════════
+       CONTACTO
+    ══════════════════════════════════════════════ */
+
+    #contacto {
+      background: var(--navy);
+      color: #fff;
+      padding: 6rem 1.5rem;
+      text-align: center;
+    }
+
+    .contacto-inner {
+      max-width: 580px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .contacto-label { color: var(--orange); }
+
+    .contacto-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(2rem, 6vw, 2.8rem);
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .contacto-sub {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.72);
+      line-height: 1.65;
+    }
+
+    .btn-wa-contact {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 0.9rem 2.2rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      background: #25D366;
+      color: #fff;
+      transition: filter 0.15s, transform 0.1s;
+    }
+
+    .btn-wa-contact:hover  { filter: brightness(1.1); transform: translateY(-2px); }
+    .btn-wa-contact:active { transform: translateY(0); }
+
+    .contacto-info {
+      font-size: 0.84rem;
+      color: rgba(255,255,255,0.45);
+    }
 
     /* ══════════════════════════════════════════════
        FOOTER
     ══════════════════════════════════════════════ */
 
     footer {
-      background: var(--white);
+      background: #fff;
       color: #4A5568;
       text-align: center;
       padding: 2rem 1.5rem;
@@ -439,6 +754,7 @@
       flex-direction: column;
       align-items: center;
       gap: 0.75rem;
+      border-top: 1px solid var(--border);
     }
 
     .footer-logo {
@@ -464,352 +780,7 @@
       color: #4A5568;
     }
 
-    .footer-copy {
-      font-size: 0.78rem;
-      color: #A0AEC0;
-    }
-
-    /* ══════════════════════════════════════════════
-       Sección visibility observer para btn-back
-    ══════════════════════════════════════════════ */
-
-    #btn-back-cubo, #btn-back-craft { display: none; }
-
-    /* ══════════════════════════════════════════════
-       UOCRA corner badge
-    ══════════════════════════════════════════════ */
-
-    /* letras individuales del logo */
-    .cc-l {
-      display: inline;
-      transition: color 0.3s ease, text-shadow 0.3s ease;
-    }
-    .cc-l.glow {
-      color: #F59E0B;
-      text-shadow: 0 0 18px rgba(245,158,11,0.9), 0 0 40px rgba(245,158,11,0.5);
-    }
-
-    /* badge UOCRA — arranca invisible, aparece con bounce */
-    @keyframes badgeBounce {
-      0%   { transform: scale(0.3) translateY(30px); opacity: 0; }
-      60%  { transform: scale(1.15) translateY(-6px); opacity: 1; }
-      80%  { transform: scale(0.95) translateY(2px); }
-      100% { transform: scale(1) translateY(0); opacity: 1; }
-    }
-
-    .uocra-badge {
-      position: fixed;
-      bottom: 1.5rem;
-      right: 1.5rem;
-      z-index: 9999;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.2rem;
-      background: rgba(15, 35, 65, 0.96);
-      border: 2px solid #F59E0B;
-      border-radius: 0.85rem;
-      padding: 0.7rem 2rem 0.85rem;
-      text-align: center;
-      user-select: none;
-      box-shadow: 0 0 24px rgba(245,158,11,0.35), 0 8px 32px rgba(0,0,0,0.4);
-    }
-
-    .uocra-badge.show {
-      display: flex;
-      animation: badgeBounce 0.55s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
-    }
-
-    .uocra-powered {
-      font-family: 'Inter', sans-serif;
-      font-size: 0.58rem;
-      font-weight: 600;
-      color: rgba(255,255,255,0.7);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    .uocra-text {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 2rem;
-      font-weight: 800;
-      color: #F59E0B;
-      letter-spacing: 0.08em;
-      line-height: 1;
-      text-shadow: 0 0 12px rgba(245,158,11,0.6);
-    }
-
-    /* botón trigger sutil */
-    #uocra-trigger {
-      background: none;
-      border: none;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: #9CA3AF;
-      cursor: pointer;
-      padding: 0.25rem 0.5rem;
-      letter-spacing: 0.02em;
-      transition: color 0.2s ease, opacity 0.3s ease;
-      margin-top: -0.5rem;
-    }
-    #uocra-trigger:hover { color: #F59E0B; }
-    #uocra-trigger.hidden { opacity: 0; pointer-events: none; }
-
-    /* ══════════════════════════════════════════════
-       HEADER FIJO
-    ══════════════════════════════════════════════ */
-
-    .site-header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 1000;
-      background: #fff;
-      height: 60px;
-      box-shadow: 0 1px 0 #E2E8F0, 0 2px 10px rgba(0,0,0,0.06);
-      transform: translateY(-100%);
-      transition: transform 0.3s ease;
-    }
-
-    .site-header.visible { transform: translateY(0); }
-
-    .header-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 1.5rem;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .header-logo {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 1.45rem;
-      font-weight: 800;
-      color: #1E3A5F;
-      letter-spacing: 0.5px;
-      text-decoration: none;
-      flex-shrink: 0;
-    }
-
-    .header-nav {
-      display: flex;
-      align-items: center;
-      gap: 0.15rem;
-      list-style: none;
-    }
-
-    .nav-link {
-      font-family: 'Inter', sans-serif;
-      font-size: 0.84rem;
-      font-weight: 600;
-      color: #4A5568;
-      text-decoration: none;
-      padding: 0.4rem 0.7rem;
-      border-radius: 0.3rem;
-      transition: color 0.15s, background 0.15s;
-      white-space: nowrap;
-    }
-
-    .nav-link:hover { color: #1E3A5F; background: #F1F5F9; }
-
-    .hamburger {
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      gap: 5px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0.5rem;
-    }
-
-    .hamburger span {
-      display: block;
-      width: 22px;
-      height: 2px;
-      background: #1E3A5F;
-      border-radius: 2px;
-      transition: transform 0.25s, opacity 0.25s;
-    }
-
-    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-    .hamburger.open span:nth-child(2) { opacity: 0; }
-    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-    .mobile-nav {
-      display: none;
-      position: fixed;
-      top: 60px; left: 0; right: 0;
-      background: #fff;
-      border-top: 1px solid #E2E8F0;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-      z-index: 999;
-      flex-direction: column;
-      padding: 0.5rem 0 1rem;
-    }
-
-    .mobile-nav.open { display: flex; }
-
-    .mobile-nav .nav-link {
-      padding: 0.8rem 1.5rem;
-      border-radius: 0;
-      font-size: 0.95rem;
-    }
-
-    @media (max-width: 680px) {
-      .header-nav { display: none; }
-      .hamburger  { display: flex; }
-    }
-
-    /* scroll offset para header fijo */
-    #cubo, #craft { scroll-margin-top: 60px; }
-
-    /* ══════════════════════════════════════════════
-       QUIÉNES SOMOS
-    ══════════════════════════════════════════════ */
-
-    #quienes {
-      background: #F8FAFC;
-      color: #1A202C;
-      padding: 6rem 1.5rem;
-      text-align: center;
-    }
-
-    .quienes-inner {
-      max-width: 860px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2rem;
-    }
-
-    .section-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #1E40AF;
-    }
-
-    .quienes-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(2rem, 6vw, 2.8rem);
-      font-weight: 800;
-      color: #1E3A5F;
-      line-height: 1.05;
-    }
-
-    .quienes-text {
-      font-size: 1.05rem;
-      color: #4A5568;
-      line-height: 1.8;
-      max-width: 640px;
-    }
-
-    .quienes-cols {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.25rem;
-      width: 100%;
-      margin-top: 0.5rem;
-    }
-
-    @media (max-width: 600px) {
-      .quienes-cols { grid-template-columns: 1fr; }
-    }
-
-    .quienes-col {
-      background: #fff;
-      border: 1px solid #E2E8F0;
-      border-top: 3px solid #1E40AF;
-      padding: 1.75rem 1.25rem;
-      text-align: center;
-    }
-
-    .quienes-col-icon {
-      font-size: 2rem;
-      display: block;
-      margin-bottom: 0.75rem;
-      line-height: 1;
-    }
-
-    .quienes-col-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 1rem;
-      font-weight: 800;
-      color: #1E3A5F;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin-bottom: 0.45rem;
-    }
-
-    .quienes-col p {
-      font-size: 0.84rem;
-      color: #718096;
-      line-height: 1.55;
-    }
-
-    /* ══════════════════════════════════════════════
-       CONTACTO
-    ══════════════════════════════════════════════ */
-
-    #contacto {
-      background: #1E3A5F;
-      color: #fff;
-      padding: 6rem 1.5rem;
-      text-align: center;
-    }
-
-    .contacto-inner {
-      max-width: 580px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1.5rem;
-    }
-
-    .contacto-label { color: #F59E0B; }
-
-    .contacto-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(2rem, 6vw, 2.8rem);
-      font-weight: 800;
-      line-height: 1.1;
-    }
-
-    .contacto-sub {
-      font-size: 1rem;
-      color: rgba(255,255,255,0.72);
-      line-height: 1.65;
-      margin-top: -0.25rem;
-    }
-
-    .btn-wa-contact {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      font-family: 'Inter', sans-serif;
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 0.9rem 2.2rem;
-      border-radius: 0.5rem;
-      text-decoration: none;
-      background: #25D366;
-      color: #fff;
-      transition: filter 0.15s, transform 0.1s;
-    }
-
-    .btn-wa-contact:hover  { filter: brightness(1.1); transform: translateY(-2px); }
-    .btn-wa-contact:active { transform: translateY(0); }
-
-    .contacto-info {
-      font-size: 0.84rem;
-      color: rgba(255,255,255,0.45);
-    }
+    .footer-copy { font-size: 0.78rem; color: #A0AEC0; }
   </style>
 </head>
 <body>
@@ -823,19 +794,19 @@
     <nav aria-label="Navegación principal">
       <ul class="header-nav">
         <li><a class="nav-link" href="#hub">Inicio</a></li>
-        <li><a class="nav-link" href="#quienes">Quiénes Somos</a></li>
+        <li><a class="nav-link" href="#quienes">Qui&eacute;nes Somos</a></li>
         <li><a class="nav-link" href="#cubo">CUBO</a></li>
         <li><a class="nav-link" href="#craft">CRAFT</a></li>
         <li><a class="nav-link" href="#contacto">Contacto</a></li>
       </ul>
     </nav>
-    <button class="hamburger" id="hamburger" aria-label="Abrir menú" aria-expanded="false">
+    <button class="hamburger" id="hamburger" aria-label="Abrir men&uacute;" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
   </div>
-  <nav class="mobile-nav" id="mobile-nav" aria-label="Menú móvil">
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Men&uacute; m&oacute;vil">
     <a class="nav-link" href="#hub"      onclick="closeMobileNav()">Inicio</a>
-    <a class="nav-link" href="#quienes"  onclick="closeMobileNav()">Quiénes Somos</a>
+    <a class="nav-link" href="#quienes"  onclick="closeMobileNav()">Qui&eacute;nes Somos</a>
     <a class="nav-link" href="#cubo"     onclick="closeMobileNav()">CUBO</a>
     <a class="nav-link" href="#craft"    onclick="closeMobileNav()">CRAFT</a>
     <a class="nav-link" href="#contacto" onclick="closeMobileNav()">Contacto</a>
@@ -843,40 +814,184 @@
 </header>
 
 <!-- ══════════════════════════════════════════
-     SECCIÓN 1 — HUB CENTRAL
+     PÁGINA 1 — HUB
 ══════════════════════════════════════════ -->
 <section id="hub">
-  <div class="hub-logo" id="cc-logo"><span class="cc-l">C</span><span class="cc-l u-src" id="u-U">U</span><span class="cc-l">B</span><span class="cc-l u-src" id="u-O">O</span><span class="cc-l u-src" id="u-C">C</span><span class="cc-l u-src" id="u-R">R</span><span class="cc-l u-src" id="u-A">A</span><span class="cc-l">F</span><span class="cc-l">T</span></div>
-  <p class="hub-tagline">Soluciones técnicas para construcción</p>
-  <button id="uocra-trigger">Con la potencia de ›</button>
-  <div class="uocra-badge" id="uocra-badge" aria-hidden="true">
-    <span class="uocra-powered">Con la potencia de</span>
-    <span class="uocra-text">UOCRA</span>
+  <div class="hub-body">
+
+    <!-- Columna izquierda -->
+    <div class="hub-left">
+      <div class="hub-title" id="cc-logo"><span class="cc-l">C</span><span class="cc-l" id="u-U">U</span><span class="cc-l">B</span><span class="cc-l" id="u-O">O</span><span class="cc-l" id="u-C">C</span><span class="cc-l" id="u-R">R</span><span class="cc-l" id="u-A">A</span><span class="cc-l">F</span><span class="cc-l">T</span></div>
+      <p class="hub-subtitle">Soluciones t&eacute;cnicas para construcci&oacute;n</p>
+
+      <div class="hub-block cubo-block">
+        <div class="hub-block-name">CUBO</div>
+        <div class="hub-block-desc">Seguridad e Higiene &middot; 40+ productos EPP &middot; 8 categor&iacute;as</div>
+        <a class="hub-block-btn" href="#cubo">Ver m&aacute;s &rarr;</a>
+      </div>
+
+      <div class="hub-block craft-block">
+        <div class="hub-block-name">CRAFT</div>
+        <div class="hub-block-desc">M&eacute;todos Constructivos &middot; 40+ productos &middot; 6 categor&iacute;as</div>
+        <a class="hub-block-btn" href="#craft">Ver m&aacute;s &rarr;</a>
+      </div>
+
+      <hr class="hub-sep">
+
+      <div class="hub-wa">
+        <a class="btn-wa-hub"
+           href="https://wa.me/5491134912395?text=Hola,%20quiero%20informaci%C3%B3n%20de%20CUBOCRAFT"
+           target="_blank" rel="noopener noreferrer">
+          <svg style="width:18px;height:18px;fill:currentColor;flex-shrink:0" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          WhatsApp
+        </a>
+        <span class="hub-wa-text">&iquest;Quer&eacute;s trabajar con nosotros?</span>
+      </div>
+    </div>
+
+    <!-- Columna derecha -->
+    <div class="hub-right">
+      <div class="hub-placeholder">imagen corporativa / carrusel de productos</div>
+    </div>
+
   </div>
 
-  <hr class="hub-divider">
-  <div class="hub-columns">
-    <div class="hub-col cubo-col">
-      <div class="hub-col-name">CUBO</div>
-      <div class="hub-col-sub">Seguridad e Higiene</div>
-      <ul class="hub-col-data">
-        <li>40+ productos EPP</li>
-        <li>Normativas IRAM</li>
-        <li>8 categorías</li>
-      </ul>
-      <a class="hub-col-cta" href="#cubo">Ver más →</a>
+  <!-- Footer mini -->
+  <div class="hub-footer-mini">
+    <button id="uocra-trigger">Con la potencia de &rsaquo;</button>
+  </div>
+</section>
+
+<!-- UOCRA badge (fijo corner) -->
+<div class="uocra-badge" id="uocra-badge" aria-hidden="true">
+  <span class="uocra-powered">Con la potencia de</span>
+  <span class="uocra-text">UOCRA</span>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PÁGINA 2 — CUBO
+══════════════════════════════════════════ -->
+<section id="cubo">
+
+  <!-- Zócalo 70px -->
+  <div class="sec-zocalo">
+    <div class="sec-zocalo-img">
+      <img src="/static/cubo.png" alt="CUBO">
     </div>
-    <div class="hub-col craft-col">
-      <div class="hub-col-name">CRAFT</div>
-      <div class="hub-col-sub">Métodos Constructivos</div>
-      <ul class="hub-col-data">
-        <li>40+ productos</li>
-        <li>CIRSOC · IRAM</li>
-        <li>6 categorías</li>
-      </ul>
-      <a class="hub-col-cta" href="#craft">Ver más →</a>
+    <div class="sec-zocalo-band">
+      <span>Seguridad e Higiene &mdash; EPP Certificado</span>
     </div>
   </div>
+
+  <!-- Cuerpo 2 columnas -->
+  <div class="sec-body">
+
+    <!-- Carrusel (izquierda) -->
+    <div class="sec-carousel-col">
+      <div class="sec-carousel-inner" id="cubo-carousel">
+        <div class="sec-slide active"><span class="sec-slide-label">Casco de Seguridad</span></div>
+        <div class="sec-slide"><span class="sec-slide-label">Botas de Seguridad</span></div>
+        <div class="sec-slide"><span class="sec-slide-label">Chaleco Reflectivo</span></div>
+        <div class="sec-slide"><span class="sec-slide-label">Guantes de Protecci&oacute;n</span></div>
+      </div>
+      <div class="sec-dots" id="cubo-dots">
+        <div class="sec-dot active"></div>
+        <div class="sec-dot"></div>
+        <div class="sec-dot"></div>
+        <div class="sec-dot"></div>
+      </div>
+    </div>
+
+    <!-- Info (derecha) -->
+    <div class="sec-info-col">
+      <h2 class="sec-info-title">Productos certificados IRAM para obra</h2>
+      <ul class="sec-info-list">
+        <li>40+ productos EPP</li>
+        <li>IRAM 3620 &middot; 3610 &middot; 3628</li>
+        <li>8 categor&iacute;as</li>
+        <li>Asesor IA 24/7</li>
+      </ul>
+      <a class="btn-wa-sec"
+         href="https://wa.me/5491134912395?text=Hola,%20quiero%20info%20sobre%20EPP%20de%20seguridad"
+         target="_blank" rel="noopener noreferrer">
+        <svg class="wa-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+        Consult&aacute; por WhatsApp
+      </a>
+    </div>
+
+  </div>
+
+  <!-- Footer mini -->
+  <div class="sec-footer-mini">
+    <span>Con la potencia de UOCRA</span>
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════════════
+     PÁGINA 3 — CRAFT
+══════════════════════════════════════════ -->
+<section id="craft">
+
+  <!-- Zócalo 70px -->
+  <div class="sec-zocalo">
+    <div class="sec-zocalo-img">
+      <img src="/static/craft.png" alt="CRAFT">
+    </div>
+    <div class="sec-zocalo-band">
+      <span>M&eacute;todos Constructivos &mdash; Materiales T&eacute;cnicos</span>
+    </div>
+  </div>
+
+  <!-- Cuerpo 2 columnas -->
+  <div class="sec-body">
+
+    <!-- Carrusel (izquierda) -->
+    <div class="sec-carousel-col">
+      <div class="sec-carousel-inner" id="craft-carousel">
+        <div class="sec-slide active"><span class="sec-slide-label">Cemento Loma Negra</span></div>
+        <div class="sec-slide"><span class="sec-slide-label">Durlock Est&aacute;ndar</span></div>
+        <div class="sec-slide"><span class="sec-slide-label">Membrana Ormiflex</span></div>
+        <div class="sec-slide"><span class="sec-slide-label">Lana de Vidrio Isover</span></div>
+      </div>
+      <div class="sec-dots" id="craft-dots">
+        <div class="sec-dot active"></div>
+        <div class="sec-dot"></div>
+        <div class="sec-dot"></div>
+        <div class="sec-dot"></div>
+      </div>
+    </div>
+
+    <!-- Info (derecha) -->
+    <div class="sec-info-col">
+      <h2 class="sec-info-title">Materiales t&eacute;cnicos para construcci&oacute;n</h2>
+      <ul class="sec-info-list">
+        <li>40+ productos</li>
+        <li>CIRSOC &middot; IRAM</li>
+        <li>6 categor&iacute;as</li>
+        <li>Asesor IA 24/7</li>
+      </ul>
+      <a class="btn-wa-sec"
+         href="https://wa.me/5491134912395?text=Hola,%20quiero%20info%20sobre%20m%C3%A9todos%20constructivos"
+         target="_blank" rel="noopener noreferrer">
+        <svg class="wa-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+        Consult&aacute; por WhatsApp
+      </a>
+    </div>
+
+  </div>
+
+  <!-- Footer mini -->
+  <div class="sec-footer-mini">
+    <span>Con la potencia de UOCRA</span>
+  </div>
+
 </section>
 
 <!-- ══════════════════════════════════════════
@@ -885,143 +1000,26 @@
 <section id="quienes">
   <div class="quienes-inner">
     <span class="section-label">Sobre nosotros</span>
-    <h2 class="quienes-title">Quiénes Somos</h2>
+    <h2 class="quienes-title">Qui&eacute;nes Somos</h2>
     <p class="quienes-text">
-      CUBOCRAFT es una empresa especializada en soluciones técnicas para el sector
-      construcción en Argentina. Combinamos tecnología, normativas y asesoramiento
+      CUBOCRAFT es una empresa especializada en soluciones t&eacute;cnicas para el sector
+      construcci&oacute;n en Argentina. Combinamos tecnolog&iacute;a, normativas y asesoramiento
       experto para potenciar a nuestros vendedores y clientes.
     </p>
     <div class="quienes-cols">
       <div class="quienes-col">
-        <span class="quienes-col-icon">🏗️</span>
-        <div class="quienes-col-title">Experiencia técnica</div>
+        <div class="quienes-col-title">Experiencia t&eacute;cnica</div>
         <p>Productos y conocimiento especializado para cada etapa de la obra.</p>
       </div>
       <div class="quienes-col">
-        <span class="quienes-col-icon">📋</span>
         <div class="quienes-col-title">Normativas IRAM/CIRSOC</div>
-        <p>Asesoramiento basado en normativas vigentes del sector construcción.</p>
+        <p>Asesoramiento basado en normativas vigentes del sector construcci&oacute;n.</p>
       </div>
       <div class="quienes-col">
-        <span class="quienes-col-icon">🤖</span>
         <div class="quienes-col-title">Asistente IA 24/7</div>
-        <p>Consultas técnicas respondidas al instante por WhatsApp con IA.</p>
+        <p>Consultas t&eacute;cnicas respondidas al instante por WhatsApp con IA.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════
-     SECCIÓN 2 — CUBO
-══════════════════════════════════════════ -->
-<section id="cubo">
-  <!-- header strip -->
-  <div class="sec-header">
-    <div class="sec-header-logo">
-      <img src="/static/cubo.png" alt="CUBO">
-    </div>
-    <div class="sec-header-band">
-      <span>Seguridad e Higiene &mdash; EPP Certificado</span>
-    </div>
-  </div>
-
-  <!-- carousel -->
-  <div class="sec-carousel" id="cubo-carousel">
-    <div class="slide active">
-      <img src="https://placehold.co/800x400/4A5568/ffffff?text=Casco+de+Seguridad" alt="Casco">
-    </div>
-    <div class="slide">
-      <img src="https://placehold.co/800x400/4A5568/ffffff?text=Botas+de+Seguridad" alt="Botas">
-    </div>
-    <div class="slide">
-      <img src="https://placehold.co/800x400/4A5568/ffffff?text=Chaleco+Reflectivo" alt="Chaleco">
-    </div>
-    <div class="slide">
-      <img src="https://placehold.co/800x400/4A5568/ffffff?text=Guantes+de+Proteccion" alt="Guantes">
-    </div>
-  </div>
-
-  <!-- footer strip -->
-  <div class="sec-footer">
-    <div class="sec-footer-features">
-      <div class="sec-feat">
-        <span class="sec-feat-icon">🛡️</span>
-        <span class="sec-feat-text">EPP Certificado IRAM</span>
-      </div>
-      <div class="sec-feat">
-        <span class="sec-feat-icon">📋</span>
-        <span class="sec-feat-text">Normas SRT 299/11</span>
-      </div>
-      <div class="sec-feat">
-        <span class="sec-feat-icon">🤖</span>
-        <span class="sec-feat-text">Asesor IA 24/7</span>
-      </div>
-    </div>
-    <a class="sec-footer-wa"
-       href="https://wa.me/5491134912395?text=Hola,%20quiero%20info%20sobre%20EPP%20de%20seguridad"
-       target="_blank" rel="noopener noreferrer">
-      <svg style="width:16px;height:16px;fill:currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-      </svg>
-      WhatsApp CUBO
-    </a>
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════
-     SECCIÓN 3 — CRAFT
-══════════════════════════════════════════ -->
-<section id="craft">
-  <!-- header strip -->
-  <div class="sec-header">
-    <div class="sec-header-logo">
-      <img src="/static/craft.png" alt="CRAFT">
-    </div>
-    <div class="sec-header-band">
-      <span>M&eacute;todos Constructivos &mdash; Materiales T&eacute;cnicos</span>
-    </div>
-  </div>
-
-  <!-- carousel -->
-  <div class="sec-carousel" id="craft-carousel">
-    <div class="slide active">
-      <img src="https://placehold.co/800x400/1E3A5F/F59E0B?text=Cemento+Loma+Negra" alt="Cemento Loma Negra">
-    </div>
-    <div class="slide">
-      <img src="https://placehold.co/800x400/1E3A5F/F59E0B?text=Durlock" alt="Durlock">
-    </div>
-    <div class="slide">
-      <img src="https://placehold.co/800x400/1E3A5F/F59E0B?text=Membrana+Ormiflex" alt="Membrana Ormiflex">
-    </div>
-    <div class="slide">
-      <img src="https://placehold.co/800x400/1E3A5F/F59E0B?text=Lana+de+Vidrio" alt="Lana de Vidrio">
-    </div>
-  </div>
-
-  <!-- footer strip -->
-  <div class="sec-footer">
-    <div class="sec-footer-features">
-      <div class="sec-feat">
-        <span class="sec-feat-icon">🧱</span>
-        <span class="sec-feat-text">Materiales t&eacute;cnicos</span>
-      </div>
-      <div class="sec-feat">
-        <span class="sec-feat-icon">📐</span>
-        <span class="sec-feat-text">Calculadora de obra</span>
-      </div>
-      <div class="sec-feat">
-        <span class="sec-feat-icon">🤖</span>
-        <span class="sec-feat-text">Asesor IA 24/7</span>
-      </div>
-    </div>
-    <a class="sec-footer-wa"
-       href="https://wa.me/5491134912395?text=Hola,%20quiero%20info%20sobre%20m%C3%A9todos%20constructivos"
-       target="_blank" rel="noopener noreferrer">
-      <svg style="width:16px;height:16px;fill:currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-      </svg>
-      WhatsApp CRAFT
-    </a>
   </div>
 </section>
 
@@ -1031,19 +1029,19 @@
 <section id="contacto">
   <div class="contacto-inner">
     <span class="section-label contacto-label">Contacto</span>
-    <h2 class="contacto-title">¿Querés trabajar con nosotros?</h2>
+    <h2 class="contacto-title">&iquest;Quer&eacute;s trabajar con nosotros?</h2>
     <p class="contacto-sub">
-      Contactanos por WhatsApp para consultas, pedidos o información sobre nuestros productos y servicios.
+      Contact&aacute;nos por WhatsApp para consultas, pedidos o informaci&oacute;n sobre nuestros productos y servicios.
     </p>
     <a class="btn-wa-contact"
-       href="https://wa.me/5491134912395?text=Hola,%20quiero%20información%20de%20CUBOCRAFT"
+       href="https://wa.me/5491134912395?text=Hola,%20quiero%20informaci%C3%B3n%20de%20CUBOCRAFT"
        target="_blank" rel="noopener noreferrer">
-      <svg class="wa-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <svg class="wa-icon" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
       </svg>
-      Escribinos por WhatsApp
+      Escrib&iacute;nos por WhatsApp
     </a>
-    <p class="contacto-info">contacto@cubocraft.com.ar &nbsp;·&nbsp; Buenos Aires, Argentina</p>
+    <p class="contacto-info">contacto@cubocraft.com.ar &nbsp;&middot;&nbsp; Buenos Aires, Argentina</p>
   </div>
 </section>
 
@@ -1057,29 +1055,28 @@
     <span>CIRSOC</span>
     <span>SRT</span>
   </div>
-  <p class="footer-copy">CUBOCRAFT © 2026 &nbsp;·&nbsp; Powered by IA 🤖</p>
+  <p class="footer-copy">CUBOCRAFT &copy; 2026 &nbsp;&middot;&nbsp; Powered by IA</p>
 </footer>
 
-<!-- Botón ↑ Volver (aparece en CUBO y CRAFT) -->
-<a class="btn-back" id="btn-back-cubo"  href="#hub">↑ Volver al inicio</a>
-<a class="btn-back" id="btn-back-craft" href="#hub">↑ Volver al inicio</a>
-
 <script>
-  // ── Carruseles automáticos ───────────────────────────────────
-  function initCarousel(containerId) {
-    const slides = document.querySelectorAll('#' + containerId + ' .slide');
+  // ── Carruseles con dots ───────────────────────────────────────
+  function initCarousel(carouselId, dotsId) {
+    const slides = document.querySelectorAll('#' + carouselId + ' .sec-slide');
+    const dots   = document.querySelectorAll('#' + dotsId + ' .sec-dot');
     if (!slides.length) return;
-    let current = 0;
+    let cur = 0;
     setInterval(() => {
-      slides[current].classList.remove('active');
-      current = (current + 1) % slides.length;
-      slides[current].classList.add('active');
+      slides[cur].classList.remove('active');
+      if (dots[cur]) dots[cur].classList.remove('active');
+      cur = (cur + 1) % slides.length;
+      slides[cur].classList.add('active');
+      if (dots[cur]) dots[cur].classList.add('active');
     }, 5000);
   }
-  initCarousel('cubo-carousel');
-  initCarousel('craft-carousel');
+  initCarousel('cubo-carousel',  'cubo-dots');
+  initCarousel('craft-carousel', 'craft-dots');
 
-  // ── Hamburguesa mobile ───────────────────────────────────────
+  // ── Hamburguesa mobile ────────────────────────────────────────
   const hamburger = document.getElementById('hamburger');
   const mobileNav = document.getElementById('mobile-nav');
   function closeMobileNav() {
@@ -1093,37 +1090,7 @@
     hamburger.setAttribute('aria-expanded', isOpen);
   });
 
-  // ── Botón Volver ─────────────────────────────────────────────
-  const sectionObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach(({ target, isIntersecting }) => {
-        const id = target.id;
-        if (id === 'cubo' || id === 'craft') {
-          document.getElementById('btn-back-' + id).style.display =
-            isIntersecting ? 'inline-flex' : 'none';
-        }
-      });
-    },
-    { threshold: 0.15 }
-  );
-  ['cubo', 'craft'].forEach(id => sectionObserver.observe(document.getElementById(id)));
-
-  // ── Header visible solo en #cubo y #craft ────────────────────
-  const siteHeader = document.querySelector('.site-header');
-  const visibleSecs = new Set();
-  const headerVisObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach(({ target, isIntersecting }) => {
-        isIntersecting ? visibleSecs.add(target.id) : visibleSecs.delete(target.id);
-      });
-      siteHeader.classList.toggle('visible', visibleSecs.size > 0);
-    },
-    { threshold: 0.1 }
-  );
-  ['cubo', 'craft'].forEach(id => headerVisObserver.observe(document.getElementById(id)));
-
-  // ── Efecto UOCRA (on click) ───────────────────────────────────
-  // Letras: U(1) O(3) C(4) R(5) A(6) de CUBOCRAFT
+  // ── Efecto UOCRA ─────────────────────────────────────────────
   const uocraOrder = ['u-U', 'u-O', 'u-C', 'u-R', 'u-A'];
   const badge   = document.getElementById('uocra-badge');
   const trigger = document.getElementById('uocra-trigger');
@@ -1133,25 +1100,21 @@
     if (uocraRunning) return;
     uocraRunning = true;
 
-    // Destino del vuelo: corner inferior derecho (centro del badge fijo)
-    const tX  = window.innerWidth  - 100;
-    const tY  = window.innerHeight - 70;
+    const tX = window.innerWidth  - 100;
+    const tY = window.innerHeight - 70;
 
     trigger.style.display = 'none';
 
-    // Fase 1 — iluminar U→O→C→R→A con stagger 100ms
     uocraOrder.forEach((id, i) => {
       setTimeout(() => {
         document.getElementById(id).classList.add('glow');
       }, i * 100);
     });
 
-    // Fase 2 — volar letras hacia donde está el trigger/badge (600ms)
     setTimeout(() => {
       uocraOrder.forEach((id, i) => {
         const el = document.getElementById(id);
         const r  = el.getBoundingClientRect();
-
         const clone = document.createElement('span');
         clone.textContent = el.textContent;
         Object.assign(clone.style, {
@@ -1168,7 +1131,6 @@
           textShadow:    '0 0 16px rgba(245,158,11,0.9)',
         });
         document.body.appendChild(clone);
-
         const delay = i * 0.07;
         requestAnimationFrame(() => requestAnimationFrame(() => {
           clone.style.transition =
@@ -1183,12 +1145,8 @@
       });
     }, 600);
 
-    // Fase 3 — badge bounce (1.4s)
-    setTimeout(() => {
-      badge.classList.add('show');
-    }, 1400);
+    setTimeout(() => { badge.classList.add('show'); }, 1400);
 
-    // Fase 4 — solo apagar glow de letras a los 10s (badge y botón quedan permanentes)
     setTimeout(() => {
       uocraOrder.forEach(id => document.getElementById(id).classList.remove('glow'));
     }, 10000);
