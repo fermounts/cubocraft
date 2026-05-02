@@ -352,21 +352,40 @@
       overflow: hidden;
     }
 
-    .hub-placeholder {
+    .hub-quotes {
       width: 100%;
       height: 100%;
       max-height: 460px;
-      border: 1px solid var(--border);
       border-radius: 0.75rem;
+      background: #1E3A5F;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hub-quote {
+      position: absolute;
+      inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #EDF2F7;
-      color: #A0AEC0;
-      font-size: 0.88rem;
-      font-weight: 500;
+      padding: 2.5rem;
       text-align: center;
-      padding: 1rem;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      pointer-events: none;
+    }
+
+    .hub-quote.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .hub-quote p {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.25;
     }
 
     /* Footer mini hub */
@@ -863,9 +882,15 @@
       </div>
     </div>
 
-    <!-- Columna derecha -->
+    <!-- Columna derecha — carrusel de frases -->
     <div class="hub-right">
-      <div class="hub-placeholder">imagen corporativa / carrusel de productos</div>
+      <div class="hub-quotes" id="hub-quotes">
+        <div class="hub-quote active"><p>Construimos el futuro, ladrillo a ladrillo.</p></div>
+        <div class="hub-quote"><p>La seguridad no es un gasto, es una inversi&oacute;n.</p></div>
+        <div class="hub-quote" data-duration="8000"><p>Cada obra es una oportunidad de hacer algo que dure.</p></div>
+        <div class="hub-quote"><p>Proteger al trabajador es construir mejor.</p></div>
+        <div class="hub-quote"><p>Materiales que resisten. Soluciones que perduran.</p></div>
+      </div>
     </div>
 
   </div>
@@ -1106,6 +1131,22 @@
   }
   initCarousel('cubo-carousel',  'cubo-dots');
   initCarousel('craft-carousel', 'craft-dots');
+
+  // ── Carrusel de frases del hub (duración variable) ────────────
+  (function initHubQuotes() {
+    const quotes = Array.from(document.querySelectorAll('#hub-quotes .hub-quote'));
+    if (!quotes.length) return;
+    let cur = 0;
+    function next() {
+      quotes[cur].classList.remove('active');
+      cur = (cur + 1) % quotes.length;
+      quotes[cur].classList.add('active');
+      const ms = parseInt(quotes[cur].dataset.duration, 10) || 4000;
+      setTimeout(next, ms);
+    }
+    const firstMs = parseInt(quotes[0].dataset.duration, 10) || 4000;
+    setTimeout(next, firstMs);
+  })();
 
   // ── Hamburguesa mobile ────────────────────────────────────────
   const hamburger = document.getElementById('hamburger');
