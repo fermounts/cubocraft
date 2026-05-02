@@ -479,17 +479,29 @@
       pointer-events: auto;
     }
 
-    .sec-slide-label {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: clamp(1.2rem, 3vw, 1.8rem);
-      font-weight: 700;
-      text-align: center;
-      padding: 0.5rem 1rem;
-      line-height: 1.2;
+    .sec-slide img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
-    #cubo  .sec-slide-label { color: var(--blue); }
-    #craft .sec-slide-label { color: var(--navy); }
+    .sec-slide-label {
+      position: relative;
+      z-index: 1;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+      font-weight: 700;
+      text-align: center;
+      padding: 0.35rem 0.9rem;
+      line-height: 1.2;
+      background: rgba(0,0,0,0.45);
+      color: #fff;
+      border-radius: 0.3rem;
+      backdrop-filter: blur(2px);
+    }
 
     /* Dots */
     .sec-dots {
@@ -891,10 +903,22 @@
     <!-- Carrusel (izquierda) -->
     <div class="sec-carousel-col">
       <div class="sec-carousel-inner" id="cubo-carousel">
-        <div class="sec-slide active"><span class="sec-slide-label">Casco de Seguridad</span></div>
-        <div class="sec-slide"><span class="sec-slide-label">Botas de Seguridad</span></div>
-        <div class="sec-slide"><span class="sec-slide-label">Chaleco Reflectivo</span></div>
-        <div class="sec-slide"><span class="sec-slide-label">Guantes de Protecci&oacute;n</span></div>
+        <div class="sec-slide active">
+          <img src="/static/casco.png" alt="Casco de Seguridad">
+          <span class="sec-slide-label">Casco de Seguridad</span>
+        </div>
+        <div class="sec-slide">
+          <img src="/static/guantes.jpg" alt="Guantes de Protección">
+          <span class="sec-slide-label">Guantes de Protecci&oacute;n</span>
+        </div>
+        <div class="sec-slide">
+          <img src="/static/botas.jpg" alt="Botas de Seguridad">
+          <span class="sec-slide-label">Botas de Seguridad</span>
+        </div>
+        <div class="sec-slide">
+          <img src="/static/trabajador.jpg" alt="EPP Completo">
+          <span class="sec-slide-label">EPP Completo</span>
+        </div>
       </div>
       <div class="sec-dots" id="cubo-dots">
         <div class="sec-dot active"></div>
@@ -953,14 +977,21 @@
     <!-- Carrusel (izquierda) -->
     <div class="sec-carousel-col">
       <div class="sec-carousel-inner" id="craft-carousel">
-        <div class="sec-slide active"><span class="sec-slide-label">Cemento Loma Negra</span></div>
-        <div class="sec-slide"><span class="sec-slide-label">Durlock Est&aacute;ndar</span></div>
-        <div class="sec-slide"><span class="sec-slide-label">Membrana Ormiflex</span></div>
-        <div class="sec-slide"><span class="sec-slide-label">Lana de Vidrio Isover</span></div>
+        <div class="sec-slide active">
+          <img src="/static/ladrillos.jpg" alt="Mampostería">
+          <span class="sec-slide-label">Mampostería</span>
+        </div>
+        <div class="sec-slide">
+          <img src="/static/estructura.jpg" alt="Steel Frame">
+          <span class="sec-slide-label">Steel Frame</span>
+        </div>
+        <div class="sec-slide">
+          <img src="/static/durlock.jpg" alt="Construcción en Seco">
+          <span class="sec-slide-label">Construcci&oacute;n en Seco</span>
+        </div>
       </div>
       <div class="sec-dots" id="craft-dots">
         <div class="sec-dot active"></div>
-        <div class="sec-dot"></div>
         <div class="sec-dot"></div>
         <div class="sec-dot"></div>
       </div>
