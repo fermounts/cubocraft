@@ -498,6 +498,7 @@
       pointer-events: auto;
     }
 
+    .sec-slide picture { position: absolute; inset: 0; display: block; }
     .sec-slide img {
       position: absolute;
       inset: 0;
@@ -915,7 +916,10 @@
   <!-- Zócalo 70px -->
   <div class="sec-zocalo">
     <div class="sec-zocalo-img">
-      <img src="/static/cubo.png" alt="CUBO">
+      <picture>
+        <source srcset="/static/cubo.webp" type="image/webp">
+        <img src="/static/cubo.png" alt="CUBO">
+      </picture>
     </div>
     <div class="sec-zocalo-band">
       <span>Seguridad e Higiene &mdash; EPP Certificado</span>
@@ -929,19 +933,31 @@
     <div class="sec-carousel-col">
       <div class="sec-carousel-inner" id="cubo-carousel">
         <div class="sec-slide active">
-          <img src="/static/casco.png" alt="Casco de Seguridad">
+          <picture>
+            <source srcset="/static/casco.webp" type="image/webp">
+            <img src="/static/casco.png" alt="Casco de Seguridad" loading="eager">
+          </picture>
           <span class="sec-slide-label">Casco de Seguridad</span>
         </div>
         <div class="sec-slide">
-          <img src="/static/guantes.jpg" alt="Guantes de Protección">
+          <picture>
+            <source srcset="/static/guantes.webp" type="image/webp">
+            <img src="/static/guantes.jpg" alt="Guantes de Protección" loading="lazy">
+          </picture>
           <span class="sec-slide-label">Guantes de Protecci&oacute;n</span>
         </div>
         <div class="sec-slide">
-          <img src="/static/botas.jpg" alt="Botas de Seguridad">
+          <picture>
+            <source srcset="/static/botas.webp" type="image/webp">
+            <img src="/static/botas.jpg" alt="Botas de Seguridad" loading="lazy">
+          </picture>
           <span class="sec-slide-label">Botas de Seguridad</span>
         </div>
         <div class="sec-slide">
-          <img src="/static/trabajador.jpg" alt="EPP Completo">
+          <picture>
+            <source srcset="/static/trabajador.webp" type="image/webp">
+            <img src="/static/trabajador.jpg" alt="EPP Completo" loading="lazy">
+          </picture>
           <span class="sec-slide-label">EPP Completo</span>
         </div>
       </div>
@@ -989,7 +1005,10 @@
   <!-- Zócalo 70px -->
   <div class="sec-zocalo">
     <div class="sec-zocalo-img">
-      <img src="/static/craft.png" alt="CRAFT">
+      <picture>
+        <source srcset="/static/craft.webp" type="image/webp">
+        <img src="/static/craft.png" alt="CRAFT">
+      </picture>
     </div>
     <div class="sec-zocalo-band">
       <span>M&eacute;todos Constructivos &mdash; Materiales T&eacute;cnicos</span>
@@ -1003,15 +1022,24 @@
     <div class="sec-carousel-col">
       <div class="sec-carousel-inner" id="craft-carousel">
         <div class="sec-slide active">
-          <img src="/static/mamposteria.jpg" alt="Sistema Tradicional">
+          <picture>
+            <source srcset="/static/mamposteria.webp" type="image/webp">
+            <img src="/static/mamposteria.jpg" alt="Sistema Tradicional" loading="eager">
+          </picture>
           <span class="sec-slide-label">Sistema Tradicional</span>
         </div>
         <div class="sec-slide">
-          <img src="/static/estructura.jpg" alt="Steel Frame">
+          <picture>
+            <source srcset="/static/estructura.webp" type="image/webp">
+            <img src="/static/estructura.jpg" alt="Steel Frame" loading="lazy">
+          </picture>
           <span class="sec-slide-label">Steel Frame</span>
         </div>
         <div class="sec-slide">
-          <img src="/static/durlock.jpg" alt="Construcción en Seco">
+          <picture>
+            <source srcset="/static/durlock.webp" type="image/webp">
+            <img src="/static/durlock.jpg" alt="Construcción en Seco" loading="lazy">
+          </picture>
           <span class="sec-slide-label">Construcci&oacute;n en Seco</span>
         </div>
       </div>

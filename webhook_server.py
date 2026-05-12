@@ -71,6 +71,13 @@ _scheduler.start()
 logger.info("Scheduler iniciado — resumen 20:00 ARG | procesar_pendientes cada 1h")
 
 
+@app.after_request
+def add_cache_headers(response):
+    if request.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
+
 def _extract_twilio(req):
     phone = req.form.get("From", "").replace("whatsapp:", "")
     text = req.form.get("Body", "").strip()
