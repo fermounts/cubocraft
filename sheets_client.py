@@ -129,6 +129,7 @@ def registrar_pedido(
         pid = f"P{datetime.now().strftime('%Y%m%d%H%M%S')}"
         ws.append_row([
             pid,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             str(vendedor.get("ID", "")),
             str(vendedor.get("Nombre", "")),
             str(producto.get("ID", "")),
@@ -138,7 +139,6 @@ def registrar_pedido(
             str(descuento_pct),
             str(subtotal),
             str(id_campana or ""),
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "PENDIENTE",
         ])
         logger.info("Pedido registrado: %s", pid)
@@ -178,6 +178,7 @@ def get_saldo(vendedor: dict) -> float:
             float(r.get("Monto", 0))
             for r in ws.get_all_records()
             if str(r.get("ID_Vendedor", "")) == vid
+            and str(r.get("Estado", "")).upper() != "ANULADO"
         )
         return round(total, 2)
     except Exception as e:
@@ -198,12 +199,12 @@ def registrar_pago(
         pid = f"PAG{datetime.now().strftime('%Y%m%d%H%M%S')}"
         ws.append_row([
             pid,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             str(vendedor.get("ID", "")),
             str(vendedor.get("Nombre", "")),
             str(monto),
             metodo,
             str(comprobante or ""),
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "CONFIRMADO",
         ])
         logger.info("Pago registrado: %s", pid)
@@ -211,6 +212,70 @@ def registrar_pago(
     except Exception as e:
         logger.error("registrar_pago error: %s", e)
         return "ERROR", 0.0, 0.0
+
+
+def get_pedidos_pendientes(vendedor: dict) -> list[dict]:
+    try:
+        ws = _get_sheet("PEDIDOS")
+        vid = str(vendedor.get("ID", ""))
+        return [
+            r for r in ws.get_all_records()
+            if str(r.get("ID_Vendedor", "")) == vid
+            and str(r.get("Estado", "")).upper() == "PENDIENTE"
+        ]
+    except Exception as e:
+        logger.error("get_pedidos_pendientes error: %s", e)
+        return []
+
+
+def cancelar_pedido(id_pedido: str, id_vendedor: str) -> bool:
+    try:
+        ws = _get_sheet("PEDIDOS")
+        records = ws.get_all_values()
+        headers = records[0]
+        col_id = headers.index("ID_Pedido")
+        col_vid = headers.index("ID_Vendedor")
+        col_estado = headers.index("Estado")
+        for i, row in enumerate(records[1:], start=2):
+            if row[col_id] == id_pedido and row[col_vid] == id_vendedor:
+                if row[col_estado].upper() == "PENDIENTE":
+                    ws.update_cell(i, col_estado + 1, "CANCELADO")
+                    logger.info("Pedido %s cancelado", id_pedido)
+                    return True
+        return False
+    except Exception as e:
+        logger.error("cancelar_pedido error: %s", e)
+        return False
+
+
+def get_pagos_confirmados_todos() -> list[dict]:
+    try:
+        ws = _get_sheet("PAGOS")
+        return [
+            r for r in ws.get_all_records()
+            if str(r.get("Estado", "")).upper() == "CONFIRMADO"
+        ]
+    except Exception as e:
+        logger.error("get_pagos_confirmados_todos error: %s", e)
+        return []
+
+
+def anular_pago(id_pago: str) -> bool:
+    try:
+        ws = _get_sheet("PAGOS")
+        records = ws.get_all_values()
+        headers = records[0]
+        col_id = headers.index("ID_Pago")
+        col_estado = headers.index("Estado")
+        for i, row in enumerate(records[1:], start=2):
+            if row[col_id] == id_pago:
+                ws.update_cell(i, col_estado + 1, "ANULADO")
+                logger.info("Pago %s anulado", id_pago)
+                return True
+        return False
+    except Exception as e:
+        logger.error("anular_pago error: %s", e)
+        return False
 
 
 # ── Campañas / descuentos ─────────────────────────────────────────────────────

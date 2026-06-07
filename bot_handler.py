@@ -25,6 +25,10 @@ BAJA_CONFIRMAR = "BAJA_CONFIRMAR"
 CONSULTA_IA = "CONSULTA_IA"
 POST_ACCION = "POST_ACCION"
 SUPER_CANDIDATAS = "SUPER_CANDIDATAS"
+CANCELAR_PEDIDO = "CANCELAR_PEDIDO"
+CANCELAR_PEDIDO_CONFIRM = "CANCELAR_PEDIDO_CONFIRM"
+ANULAR_PAGO = "ANULAR_PAGO"
+ANULAR_PAGO_CONFIRM = "ANULAR_PAGO_CONFIRM"
 
 # ── Categorías de producto por empresa ────────────────────────────────────────
 # (clave en Apertura, nombre de display)
@@ -296,6 +300,12 @@ def procesar(phone: str, texto: str, media_url: str | None = None) -> str:
         session_store.set(phone, ELEGIR_EMPRESA, vendedor=vendedor)
         return _selector_empresa(nombre)
 
+    if t == "cancelar pedido":
+        return _iniciar_cancelar_pedido(phone, vendedor)
+
+    if t == "anular pago" and es_supervisor:
+        return _iniciar_anular_pago(phone, vendedor)
+
     if t in ("00", "menu", "menú"):
         empresa = session.get("empresa") or ""
         if not empresa:
@@ -320,10 +330,14 @@ def procesar(phone: str, texto: str, media_url: str | None = None) -> str:
         PAGO_METODO:     lambda: _handle_pago_metodo(phone, t, vendedor),
         PAGO_COMPROBANTE:lambda: _handle_pago_comprobante(phone, texto, media_url, vendedor),
         PAGO_CONFIRMAR:  lambda: _handle_pago_confirmar(phone, t, vendedor),
-        BAJA_CONFIRMAR:  lambda: _handle_baja_confirmar(phone, t, vendedor),
-        CONSULTA_IA:     lambda: _handle_consulta_ia(phone, texto, vendedor),
-        POST_ACCION:     lambda: _handle_post_accion(phone, t, vendedor, es_supervisor),
-        SUPER_CANDIDATAS:lambda: _handle_super_candidatas(phone, texto, vendedor),
+        BAJA_CONFIRMAR:         lambda: _handle_baja_confirmar(phone, t, vendedor),
+        CONSULTA_IA:            lambda: _handle_consulta_ia(phone, texto, vendedor),
+        POST_ACCION:            lambda: _handle_post_accion(phone, t, vendedor, es_supervisor),
+        SUPER_CANDIDATAS:       lambda: _handle_super_candidatas(phone, texto, vendedor),
+        CANCELAR_PEDIDO:        lambda: _handle_cancelar_pedido(phone, t, vendedor),
+        CANCELAR_PEDIDO_CONFIRM:lambda: _handle_cancelar_pedido_confirm(phone, t, vendedor),
+        ANULAR_PAGO:            lambda: _handle_anular_pago(phone, t, vendedor),
+        ANULAR_PAGO_CONFIRM:    lambda: _handle_anular_pago_confirm(phone, t, vendedor),
     }
 
     handler = handlers.get(estado)
@@ -786,3 +800,122 @@ def _handle_post_accion(phone: str, t: str, vendedor: dict, es_supervisor: bool)
         session_store.clear(phone)
         return f"¡Hasta pronto, {vendedor.get('Nombre', '')}! 👋"
     return "1️⃣ Volver al menú  |  2️⃣ Hasta pronto 👋"
+
+
+# ── Cancelar pedido ───────────────────────────────────────────────────────────
+
+def _iniciar_cancelar_pedido(phone: str, vendedor: dict) -> str:
+    pendientes = sheets_client.get_pedidos_pendientes(vendedor)
+    session_store.set(phone, CANCELAR_PEDIDO, vendedor=vendedor, pedidos_cancelables=pendientes)
+    if not pendientes:
+        session_store.set(phone, POST_ACCION, vendedor=vendedor)
+        return "No tenés pedidos pendientes para cancelar." + _post_prompt()
+    lines = ["📋 *Tus pedidos pendientes:*\n"]
+    for i, p in enumerate(pendientes, 1):
+        lines.append(
+            f"{i}. {p.get('ID_Pedido','?')} — {p.get('Nombre_Producto','?')} "
+            f"x{p.get('Cantidad','?')} — ${p.get('Total','?')}"
+        )
+    lines.append("\nEscribí el número para cancelar, o 00 para volver al menú.")
+    return "\n".join(lines)
+
+
+def _handle_cancelar_pedido(phone: str, t: str, vendedor: dict) -> str:
+    session = session_store.get(phone)
+    pendientes: list[dict] = session.get("pedidos_cancelables", [])
+    try:
+        idx = int(t) - 1
+        if idx < 0 or idx >= len(pendientes):
+            raise ValueError
+    except (ValueError, TypeError):
+        return f"Elegí un número del 1 al {len(pendientes)}, o 00 para volver."
+    pedido = pendientes[idx]
+    session_store.set(phone, CANCELAR_PEDIDO_CONFIRM, vendedor=vendedor,
+                      pedido_a_cancelar=pedido)
+    return (
+        f"¿Cancelar *{pedido.get('ID_Pedido','?')}* — "
+        f"{pedido.get('Nombre_Producto','?')} x{pedido.get('Cantidad','?')} "
+        f"por ${pedido.get('Total','?')}?\n\n"
+        "Esta acción no se puede deshacer. (SI / NO)"
+    )
+
+
+def _handle_cancelar_pedido_confirm(phone: str, t: str, vendedor: dict) -> str:
+    session = session_store.get(phone)
+    pedido = session.get("pedido_a_cancelar", {})
+    if t in ("si", "sí"):
+        ok = sheets_client.cancelar_pedido(
+            str(pedido.get("ID_Pedido", "")),
+            str(vendedor.get("ID", "")),
+        )
+        session_store.set(phone, POST_ACCION, vendedor=vendedor)
+        if ok:
+            whatsapp_client.notificar_supervisora(
+                f"🚫 Pedido cancelado: {pedido.get('ID_Pedido','?')} "
+                f"de {vendedor.get('Nombre','?')} — {pedido.get('Nombre_Producto','?')}"
+            )
+            return f"✅ Pedido {pedido.get('ID_Pedido','?')} cancelado." + _post_prompt()
+        return "No se pudo cancelar el pedido. Puede que ya no esté pendiente." + _post_prompt()
+    if t == "no":
+        return _iniciar_cancelar_pedido(phone, vendedor)
+    return "Respondé SI o NO."
+
+
+# ── Anular pago (supervisor) ──────────────────────────────────────────────────
+
+def _iniciar_anular_pago(phone: str, vendedor: dict) -> str:
+    pagos = sheets_client.get_pagos_confirmados_todos()
+    session_store.set(phone, ANULAR_PAGO, vendedor=vendedor, pagos_anulables=pagos)
+    if not pagos:
+        session_store.set(phone, POST_ACCION, vendedor=vendedor)
+        return "No hay pagos confirmados para anular." + _post_prompt()
+    lines = ["💰 *Pagos confirmados:*\n"]
+    for i, p in enumerate(pagos, 1):
+        lines.append(
+            f"{i}. {p.get('ID_Pago','?')} — {p.get('Nombre_Vendedor','?')} "
+            f"— ${p.get('Monto','?')} — {p.get('Fecha','?')}"
+        )
+    lines.append("\nEscribí el número para anular, o 00 para volver al menú.")
+    return "\n".join(lines)
+
+
+def _handle_anular_pago(phone: str, t: str, vendedor: dict) -> str:
+    session = session_store.get(phone)
+    pagos: list[dict] = session.get("pagos_anulables", [])
+    try:
+        idx = int(t) - 1
+        if idx < 0 or idx >= len(pagos):
+            raise ValueError
+    except (ValueError, TypeError):
+        return f"Elegí un número del 1 al {len(pagos)}, o 00 para volver."
+    pago = pagos[idx]
+    session_store.set(phone, ANULAR_PAGO_CONFIRM, vendedor=vendedor,
+                      pago_a_anular=pago)
+    return (
+        f"¿Anular *{pago.get('ID_Pago','?')}* — "
+        f"{pago.get('Nombre_Vendedor','?')} — ${pago.get('Monto','?')} "
+        f"del {pago.get('Fecha','?')}?\n\n"
+        "Esta acción no se puede deshacer. (SI / NO)"
+    )
+
+
+def _handle_anular_pago_confirm(phone: str, t: str, vendedor: dict) -> str:
+    session = session_store.get(phone)
+    pago = session.get("pago_a_anular", {})
+    if t in ("si", "sí"):
+        ok = sheets_client.anular_pago(str(pago.get("ID_Pago", "")))
+        session_store.set(phone, POST_ACCION, vendedor=vendedor)
+        if ok:
+            whatsapp_client.notificar_supervisora(
+                f"🚫 Pago anulado: {pago.get('ID_Pago','?')} "
+                f"de {pago.get('Nombre_Vendedor','?')} — ${pago.get('Monto','?')}"
+            )
+            return (
+                f"✅ Pago {pago.get('ID_Pago','?')} anulado. "
+                "El saldo del vendedor se actualizará automáticamente."
+                + _post_prompt()
+            )
+        return "No se pudo anular el pago." + _post_prompt()
+    if t == "no":
+        return _iniciar_anular_pago(phone, vendedor)
+    return "Respondé SI o NO."
