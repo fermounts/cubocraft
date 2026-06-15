@@ -29,6 +29,9 @@ CANCELAR_PEDIDO = "CANCELAR_PEDIDO"
 CANCELAR_PEDIDO_CONFIRM = "CANCELAR_PEDIDO_CONFIRM"
 ANULAR_PAGO = "ANULAR_PAGO"
 ANULAR_PAGO_CONFIRM = "ANULAR_PAGO_CONFIRM"
+SUPER_MENU = "SUPER_MENU"
+SUPER_CONFIRMAR_PAGO = "SUPER_CONFIRMAR_PAGO"
+SUPER_CONFIRMAR_PAGO_CONFIRM = "SUPER_CONFIRMAR_PAGO_CONFIRM"
 
 # ── Categorías de producto por empresa ────────────────────────────────────────
 # (clave en Apertura, nombre de display)
@@ -181,6 +184,41 @@ def _detectar_fuente(respuesta: str) -> str:
     return "NORMATIVA"
 
 
+def _ficha_a_contexto(r: dict) -> str:
+    """Convierte un registro de BASE_CONOCIMIENTO a texto para el contexto de Gemini.
+
+    Soporta dos estructuras coexistentes en la hoja:
+    - Fichas técnicas (completar_sheet.py): nombre en CATEGORIA, apertura en PREGUNTA,
+      DESCRIPCION en RESPUESTA_VALIDADA, MODO_USO en FUENTE_ORIGINAL.
+    - Q&A validadas (pipeline PENDIENTES_VALIDACION): PREGUNTA real (>15 chars).
+    """
+    pregunta = str(r.get("PREGUNTA", "")).strip()
+    respuesta = str(r.get("RESPUESTA_VALIDADA", "")).strip()
+
+    if len(pregunta) > 15:
+        # Registro Q&A del pipeline de validación
+        cat = str(r.get("CATEGORIA", "")).strip()
+        linea = f"P: {pregunta} | R: {respuesta}"
+        return linea + (f" | Cat: {cat}" if cat else "")
+
+    # Ficha técnica (mapeada a columnas Q&A por la estructura del Sheet)
+    nombre = str(r.get("CATEGORIA", "")).strip()    # Nombre del producto
+    tipo = pregunta                                   # Apertura / categoría
+    descripcion = respuesta                           # DESCRIPCION
+    modo_uso = str(r.get("FUENTE_ORIGINAL", "")).strip()
+
+    partes = []
+    if nombre:
+        partes.append(f"Producto: {nombre}")
+    if tipo:
+        partes.append(f"Tipo: {tipo}")
+    if descripcion:
+        partes.append(f"Desc: {descripcion[:250]}")
+    if modo_uso:
+        partes.append(f"Uso: {modo_uso[:150]}")
+    return " | ".join(partes)
+
+
 def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
     # Leer contexto RAG desde Sheets
     logger.info("RAG: leyendo BASE_CONOCIMIENTO...")
@@ -200,9 +238,8 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
         normativas = []
 
     ctx_base = "\n".join(
-        f"P: {r.get('PREGUNTA','')} | R: {r.get('RESPUESTA_VALIDADA','')} | Cat: {r.get('CATEGORIA','')}"
-        for r in base
-    ) or "Sin respuestas validadas aún."
+        line for r in base if (line := _ficha_a_contexto(r))
+    ) or "Sin contenido técnico aún."
 
     ctx_norm = "\n".join(
         f"ID: {k.get('ID_Norma','')} | NORMA: {k.get('Nombre_Norma','')} | ALCANCE: {k.get('Alcance','')}"
@@ -333,11 +370,14 @@ def procesar(phone: str, texto: str, media_url: str | None = None) -> str:
         BAJA_CONFIRMAR:         lambda: _handle_baja_confirmar(phone, t, vendedor),
         CONSULTA_IA:            lambda: _handle_consulta_ia(phone, texto, vendedor),
         POST_ACCION:            lambda: _handle_post_accion(phone, t, vendedor, es_supervisor),
-        SUPER_CANDIDATAS:       lambda: _handle_super_candidatas(phone, texto, vendedor),
-        CANCELAR_PEDIDO:        lambda: _handle_cancelar_pedido(phone, t, vendedor),
-        CANCELAR_PEDIDO_CONFIRM:lambda: _handle_cancelar_pedido_confirm(phone, t, vendedor),
-        ANULAR_PAGO:            lambda: _handle_anular_pago(phone, t, vendedor),
-        ANULAR_PAGO_CONFIRM:    lambda: _handle_anular_pago_confirm(phone, t, vendedor),
+        SUPER_CANDIDATAS:            lambda: _handle_super_candidatas(phone, texto, vendedor),
+        CANCELAR_PEDIDO:             lambda: _handle_cancelar_pedido(phone, t, vendedor),
+        CANCELAR_PEDIDO_CONFIRM:     lambda: _handle_cancelar_pedido_confirm(phone, t, vendedor),
+        ANULAR_PAGO:                 lambda: _handle_anular_pago(phone, t, vendedor),
+        ANULAR_PAGO_CONFIRM:         lambda: _handle_anular_pago_confirm(phone, t, vendedor),
+        SUPER_MENU:                  lambda: _handle_super_menu(phone, t, vendedor),
+        SUPER_CONFIRMAR_PAGO:        lambda: _handle_super_confirmar_pago(phone, texto, vendedor),
+        SUPER_CONFIRMAR_PAGO_CONFIRM:lambda: _handle_super_confirmar_pago_confirm(phone, t, vendedor),
     }
 
     handler = handlers.get(estado)
@@ -382,7 +422,7 @@ def _handle_menu(
         return f"🤖 {respuesta}" + _post_prompt()
 
     if t == "9" and es_supervisor:
-        return _iniciar_super_candidatas(phone, vendedor)
+        return _iniciar_super_menu(phone, vendedor)
 
     accion = _MENU_MAP.get(t)
     return _ejecutar_accion(phone, accion, vendedor, empresa, es_supervisor)
@@ -404,9 +444,15 @@ def _ejecutar_accion(
         return "💰 *Registrar pago*\nIngresá el monto:"
 
     if accion == "saldo":
-        saldo = sheets_client.get_saldo(vendedor)
+        balance = sheets_client.get_balance_vendedor(vendedor)
+        deuda = balance["deuda_real"]
+        disponible = balance["disponible"]
+        pagos_pend = balance["pagos_pendientes"]
         session_store.set(phone, POST_ACCION, vendedor=vendedor)
-        return f"💳 Tu saldo acumulado: *${saldo:.2f}*" + _post_prompt()
+        msg = f"📊 *Tu situación actual:*\nDeuda: *${deuda:.2f}*\nCrédito disponible: ${disponible:.2f}"
+        if pagos_pend > 0:
+            msg += f"\n_(Pagos en revisión: ${pagos_pend:.2f})_"
+        return msg + _post_prompt()
 
     if accion == "mis_pedidos":
         pedidos = sheets_client.get_ultimos_pedidos(vendedor, limite=5)
@@ -463,6 +509,29 @@ def _ejecutar_accion(
 
 
 # ── Panel supervisor ──────────────────────────────────────────────────────────
+
+def _iniciar_super_menu(phone: str, vendedor: dict) -> str:
+    session_store.set(phone, SUPER_MENU, vendedor=vendedor)
+    return (
+        "👥 *Panel Supervisor* 🔒\n\n"
+        "A. Ver candidatas pendientes\n"
+        "B. Confirmar / rechazar pagos\n\n"
+        "Escribí A o B"
+    )
+
+
+def _handle_super_menu(phone: str, t: str, vendedor: dict) -> str:
+    if t == "a":
+        return _iniciar_super_candidatas(phone, vendedor)
+    if t == "b":
+        return _iniciar_confirmar_pagos(phone, vendedor)
+    return (
+        "Escribí A para candidatas o B para pagos pendientes.\n\n"
+        "👥 *Panel Supervisor* 🔒\n"
+        "A. Ver candidatas pendientes\n"
+        "B. Confirmar / rechazar pagos"
+    )
+
 
 def _iniciar_super_candidatas(phone: str, vendedor: dict) -> str:
     candidatas = sheets_client.get_candidatas_pendientes()
@@ -745,14 +814,16 @@ def _handle_pago_confirmar(phone: str, t: str, vendedor: dict) -> str:
         monto = float(session.get("pago_monto") or 0)
         metodo = session.get("pago_metodo") or ""
         comprobante = session.get("pago_comprobante") or ""
-        pid, _, nuevo_saldo = sheets_client.registrar_pago(vendedor, monto, metodo, comprobante)
+        pid, _, _ = sheets_client.registrar_pago(vendedor, monto, metodo, comprobante)
         session_store.set(phone, POST_ACCION, vendedor=vendedor)
         whatsapp_client.notificar_supervisora(
-            f"💰 Pago de {vendedor.get('Nombre','?')}: ${monto:.2f} via {metodo} | ID: {pid}"
+            f"💰 Pago pendiente de confirmación\n"
+            f"Vendedor: {vendedor.get('Nombre','?')} | ${monto:.2f} via {metodo} | ID: {pid}\n"
+            f"Panel supervisor (9) → B para confirmar o rechazar"
         )
         return (
-            f"✅ *Pago registrado!*\nID: {pid}\n"
-            f"Monto: ${monto:.2f}\nNuevo saldo: ${nuevo_saldo:.2f}"
+            f"✅ *Pago enviado para revisión.*\nID: {pid}\nMonto: ${monto:.2f}\n"
+            "El supervisor lo confirmará en breve."
             + _post_prompt()
         )
     if t == "no":
@@ -918,4 +989,82 @@ def _handle_anular_pago_confirm(phone: str, t: str, vendedor: dict) -> str:
         return "No se pudo anular el pago." + _post_prompt()
     if t == "no":
         return _iniciar_anular_pago(phone, vendedor)
+    return "Respondé SI o NO."
+
+
+# ── Confirmar / rechazar pagos pendientes (supervisor) ────────────────────────
+
+def _iniciar_confirmar_pagos(phone: str, vendedor: dict) -> str:
+    pagos = sheets_client.get_pagos_pendientes_todos()
+    session_store.set(phone, SUPER_CONFIRMAR_PAGO, vendedor=vendedor, pagos_pendientes=pagos)
+    if not pagos:
+        session_store.set(phone, POST_ACCION, vendedor=vendedor)
+        return "No hay pagos pendientes de confirmación." + _post_prompt()
+    lines = ["💰 *Pagos pendientes de confirmación:*\n"]
+    for i, p in enumerate(pagos, 1):
+        lines.append(
+            f"{i}. {p.get('ID_Pago','?')} — {p.get('Nombre_Vendedor','?')} "
+            f"— ${p.get('Monto','?')} via {p.get('Metodo','?')} — {p.get('Fecha','?')}"
+        )
+    lines.append("\n*C<n>* para confirmar | *R<n>* para rechazar  (ej: C1 · R2)")
+    return "\n".join(lines)
+
+
+def _handle_super_confirmar_pago(phone: str, texto: str, vendedor: dict) -> str:
+    session = session_store.get(phone)
+    pagos: list[dict] = session.get("pagos_pendientes", [])
+    t = texto.strip().upper()
+
+    if len(t) < 2 or t[0] not in ("C", "R"):
+        return f"Usá C<n> para confirmar o R<n> para rechazar (ej: C1, R2). Hay {len(pagos)} pago(s)."
+
+    try:
+        idx = int(t[1:]) - 1
+        pago = pagos[idx]
+    except (ValueError, IndexError):
+        return f"Número inválido. Hay {len(pagos)} pago(s) listado(s)."
+
+    accion = t[0]
+    accion_txt = "confirmar" if accion == "C" else "rechazar"
+    session_store.set(phone, SUPER_CONFIRMAR_PAGO_CONFIRM, vendedor=vendedor,
+                      pago_a_gestionar=pago, accion_pago=accion)
+    return (
+        f"¿{accion_txt.capitalize()} *{pago.get('ID_Pago','?')}* de "
+        f"{pago.get('Nombre_Vendedor','?')} por ${pago.get('Monto','?')}?\n\n"
+        "Esta acción no se puede deshacer. (SI / NO)"
+    )
+
+
+def _handle_super_confirmar_pago_confirm(phone: str, t: str, vendedor: dict) -> str:
+    session = session_store.get(phone)
+    pago = session.get("pago_a_gestionar", {})
+    accion = session.get("accion_pago", "C")
+    id_pago = str(pago.get("ID_Pago", ""))
+    id_vendedor_pago = str(pago.get("ID_Vendedor", ""))
+
+    if t in ("si", "sí"):
+        if accion == "C":
+            ok = sheets_client.confirmar_pago(id_pago)
+            msg_sup = f"✅ Pago {id_pago} confirmado."
+            msg_vendedor = f"✅ Tu pago {id_pago} de ${pago.get('Monto','?')} fue confirmado. ¡Gracias!"
+        else:
+            ok = sheets_client.anular_pago(id_pago)
+            msg_sup = f"❌ Pago {id_pago} rechazado (→ ANULADO)."
+            msg_vendedor = (
+                f"❌ Tu pago {id_pago} de ${pago.get('Monto','?')} fue rechazado. "
+                "Contactá al supervisor."
+            )
+
+        session_store.set(phone, POST_ACCION, vendedor=vendedor)
+        if ok:
+            vendedor_data = sheets_client.get_vendedor_by_id(id_vendedor_pago)
+            if vendedor_data:
+                phone_vendedor = str(vendedor_data.get("Teléfono", ""))
+                if phone_vendedor:
+                    whatsapp_client.enviar(phone_vendedor, msg_vendedor)
+            return msg_sup + _post_prompt()
+        return "No se pudo procesar el pago. Puede que ya no esté pendiente." + _post_prompt()
+
+    if t == "no":
+        return _iniciar_confirmar_pagos(phone, vendedor)
     return "Respondé SI o NO."

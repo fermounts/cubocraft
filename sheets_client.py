@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -9,6 +9,10 @@ from google.oauth2.service_account import Credentials
 import config
 
 logger = logging.getLogger(__name__)
+
+LIMITE_CREDITO = 100_000
+
+_RANKING_HEADERS = ["Período", "ID_Vendedor", "Nombre", "Posición", "Monto_Total", "Cantidad_Pedidos"]
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -69,6 +73,18 @@ def get_vendedora_by_phone(phone: str) -> dict | None:
         return None
     except Exception as e:
         logger.error("get_vendedora_by_phone error: %s", e)
+        return None
+
+
+def get_vendedor_by_id(vid: str) -> dict | None:
+    try:
+        ws = _get_sheet("VENDEDORES")
+        for r in ws.get_all_records():
+            if str(r.get("ID", "")) == vid:
+                return r
+        return None
+    except Exception as e:
+        logger.error("get_vendedor_by_id error: %s", e)
         return None
 
 
@@ -170,6 +186,58 @@ def get_ultimos_pedidos(vendedor: dict, limite: int = 5) -> list[dict]:
 
 # ── Pagos ─────────────────────────────────────────────────────────────────────
 
+def get_balance_vendedor(vendedor: dict) -> dict:
+    try:
+        vid = str(vendedor.get("ID", ""))
+        pedidos = _get_sheet("PEDIDOS").get_all_records()
+        pagos   = _get_sheet("PAGOS").get_all_records()
+
+        def _f(v):
+            try:
+                return float(v or 0)
+            except (ValueError, TypeError):
+                return 0.0
+
+        total_pedidos = sum(
+            _f(r.get("Total"))
+            for r in pedidos
+            if str(r.get("ID_Vendedor", "")) == vid
+            and str(r.get("Estado", "")).upper() != "CANCELADO"
+        )
+        pagos_confirmados = sum(
+            _f(r.get("Monto"))
+            for r in pagos
+            if str(r.get("ID_Vendedor", "")) == vid
+            and str(r.get("Estado", "")).upper() == "CONFIRMADO"
+        )
+        pagos_pendientes = sum(
+            _f(r.get("Monto"))
+            for r in pagos
+            if str(r.get("ID_Vendedor", "")) == vid
+            and str(r.get("Estado", "")).upper() == "PENDIENTE"
+        )
+        deuda_real         = round(total_pedidos - pagos_confirmados, 2)
+        credito_provisional = round(pagos_pendientes, 2)
+        neto               = round(deuda_real - credito_provisional, 2)
+        disponible         = round(LIMITE_CREDITO - neto, 2)
+        return {
+            "total_pedidos": total_pedidos,
+            "pagos_confirmados": pagos_confirmados,
+            "pagos_pendientes": pagos_pendientes,
+            "deuda_real": deuda_real,
+            "credito_provisional": credito_provisional,
+            "neto": neto,
+            "disponible": disponible,
+        }
+    except Exception as e:
+        logger.error("get_balance_vendedor error: %s", e)
+        return {
+            "total_pedidos": 0, "pagos_confirmados": 0, "pagos_pendientes": 0,
+            "deuda_real": 0, "credito_provisional": 0, "neto": 0,
+            "disponible": float(LIMITE_CREDITO),
+        }
+
+
 def get_saldo(vendedor: dict) -> float:
     try:
         ws = _get_sheet("PAGOS")
@@ -194,8 +262,6 @@ def registrar_pago(
 ) -> tuple[str, float, float]:
     try:
         ws = _get_sheet("PAGOS")
-        saldo_anterior = get_saldo(vendedor)
-        nuevo_saldo = round(saldo_anterior + float(monto), 2)
         pid = f"PAG{datetime.now().strftime('%Y%m%d%H%M%S')}"
         ws.append_row([
             pid,
@@ -205,10 +271,10 @@ def registrar_pago(
             str(monto),
             metodo,
             str(comprobante or ""),
-            "CONFIRMADO",
+            "PENDIENTE",
         ])
-        logger.info("Pago registrado: %s", pid)
-        return pid, saldo_anterior, nuevo_saldo
+        logger.info("Pago registrado como PENDIENTE: %s", pid)
+        return pid, 0.0, 0.0
     except Exception as e:
         logger.error("registrar_pago error: %s", e)
         return "ERROR", 0.0, 0.0
@@ -278,6 +344,36 @@ def anular_pago(id_pago: str) -> bool:
         return False
 
 
+def get_pagos_pendientes_todos() -> list[dict]:
+    try:
+        ws = _get_sheet("PAGOS")
+        return [
+            r for r in ws.get_all_records()
+            if str(r.get("Estado", "")).upper() == "PENDIENTE"
+        ]
+    except Exception as e:
+        logger.error("get_pagos_pendientes_todos error: %s", e)
+        return []
+
+
+def confirmar_pago(id_pago: str) -> bool:
+    try:
+        ws = _get_sheet("PAGOS")
+        records = ws.get_all_values()
+        headers = records[0]
+        col_id = headers.index("ID_Pago")
+        col_estado = headers.index("Estado")
+        for i, row in enumerate(records[1:], start=2):
+            if row[col_id] == id_pago and row[col_estado].upper() == "PENDIENTE":
+                ws.update_cell(i, col_estado + 1, "CONFIRMADO")
+                logger.info("Pago %s confirmado", id_pago)
+                return True
+        return False
+    except Exception as e:
+        logger.error("confirmar_pago error: %s", e)
+        return False
+
+
 # ── Campañas / descuentos ─────────────────────────────────────────────────────
 
 def aplicar_mejor_descuento(
@@ -315,8 +411,11 @@ def get_ranking_vendedora(vendedor: dict) -> dict | None:
     try:
         ws = _get_sheet("RANKING")
         vid = str(vendedor.get("ID", ""))
+        now = datetime.now()
+        iso = now.isocalendar()
+        week_str = f"W{iso[0]}-{iso[1]:02d}"
         for r in ws.get_all_records():
-            if str(r.get("ID_Vendedor", "")) == vid:
+            if str(r.get("ID_Vendedor", "")) == vid and str(r.get("Período", "")) == week_str:
                 return r
         return None
     except Exception as e:
@@ -461,7 +560,9 @@ def registrar_pendiente_validacion(pregunta: str, respuesta: str, fuente: str) -
 def get_base_conocimiento() -> list[dict]:
     try:
         ws = _ensure_sheet("BASE_CONOCIMIENTO", _HEADERS_BASE_CONOCIMIENTO)
-        return ws.get_all_records()
+        # expected_headers evita el error por columnas vacías duplicadas cuando
+        # las fichas técnicas (12 cols) se graban en una hoja con 7 headers.
+        return ws.get_all_records(expected_headers=_HEADERS_BASE_CONOCIMIENTO)
     except Exception as e:
         logger.error("get_base_conocimiento error: %s", e)
         return []
