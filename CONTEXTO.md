@@ -1,5 +1,5 @@
 # CONTEXTO PROYECTO CUBOCRAFT
-Última actualización: 2026-06-06
+Última actualización: 2026-06-15
 
 ## DATOS GENERALES
 - Carpeta local: `/home/fernan/cubocraft/`
@@ -104,6 +104,57 @@ cancelar pedido → lista de PENDIENTE → número → confirmación SI/NO → C
 anular pago → lista de CONFIRMADO → número → confirmación SI/NO → ANULADO
 ```
 
+## CAMBIOS EN CÓDIGO (2026-06-15)
+
+### Análisis crítico realizado
+Se detectaron 18 problemas priorizados. Ver análisis completo en conversación.
+Los 3 más críticos fueron corregidos en esta sesión.
+
+### sheets_client.py
+- **Fix saldo real**: `registrar_pago()` ahora graba `Estado = "PENDIENTE"` en lugar de
+  `"CONFIRMADO"`. El saldo ya no incluye pagos no confirmados.
+- **Nuevas funciones**:
+  - `get_vendedor_by_id(vid)` — busca vendedor por ID (para notificar al confirmar pago)
+  - `get_pagos_pendientes_todos()` — lista de pagos PENDIENTE de todos los vendedores
+  - `confirmar_pago(id_pago)` — cambia PENDIENTE → CONFIRMADO
+- **Fix BASE_CONOCIMIENTO**: `get_base_conocimiento()` usa `expected_headers` para
+  evitar el error por columnas vacías duplicadas (fichas técnicas tienen 12 cols,
+  hoja tiene 7 headers definidos).
+
+### bot_handler.py
+- **Fix #1 — Saldo real**: opción 3 "Ver mi saldo" ahora usa `get_balance_vendedor()`
+  en lugar de `get_saldo()`. Muestra deuda real (pedidos − pagos confirmados) y
+  crédito disponible. Informa pagos en revisión si los hay.
+- **Fix #2 — Contexto IA**: nueva función `_ficha_a_contexto(r)` detecta si un registro
+  de BASE_CONOCIMIENTO es una ficha técnica o una Q&A del pipeline de validación,
+  y extrae el contenido útil en ambos casos. Antes el contexto enviado a Gemini
+  era vacío para todas las fichas.
+- **Fix #3 — Flujo de pagos con confirmación**:
+  - Opción 9 (supervisor) ahora abre sub-menú: A=candidatas / B=confirmar-rechazar pagos
+  - Nuevos estados: SUPER_MENU, SUPER_CONFIRMAR_PAGO, SUPER_CONFIRMAR_PAGO_CONFIRM
+  - Al registrar pago el vendedor ve "enviado para revisión"
+  - El supervisor recibe notificación con instrucción para abrir el panel (9 → B)
+  - Al confirmar o rechazar se notifica al vendedor por WhatsApp
+
+### Flujo pago (actualizado)
+```
+vendedor: monto → método → comprobante → SI → graba PENDIENTE → supervisor notificado
+supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor notificado
+```
+
+### completar_sheet.py (bug corregido 2026-06-15)
+- `get_all_records()` fallaba con headers vacíos duplicados en BASE_CONOCIMIENTO.
+  Reemplazado por `get_all_values()` con mapeo manual de columnas.
+- La lectura del ESTADO también usa los datos en memoria (evita llamadas extra a Sheets API).
+
+### BASE_CONOCIMIENTO — estructura real vs esperada
+- Headers reales de la hoja (creados por pipeline Q&A): ID, CATEGORIA, PREGUNTA,
+  RESPUESTA_VALIDADA, FUENTE_ORIGINAL, VALIDADO_POR, FECHA_VALIDACION
+- Las fichas técnicas generadas por completar_sheet.py se almacenan en esas columnas
+  con mapping: nombre→CATEGORIA, apertura→PREGUNTA, DESCRIPCION→RESPUESTA_VALIDADA,
+  MODO_USO→FUENTE_ORIGINAL
+- `_ficha_a_contexto()` maneja ambos tipos transparentemente
+
 ## ESTADO BOT WHATSAPP — OPERATIVO
 - Selector CUBO/CRAFT al inicio
 - Menú por perfil de usuario
@@ -126,13 +177,26 @@ anular pago → lista de CONFIRMADO → número → confirmación SI/NO → ANUL
 - Pendiente: agregar datos reales de pruebas en secciones 4.2 y 4.5
 
 ## PENDIENTES DEL PROYECTO
-1. Completar BASE_CONOCIMIENTO (80 fichas — corriendo ahora)
+1. Completar BASE_CONOCIMIENTO (80 fichas — corriendo en background, 26/62 al 2026-06-15)
 2. Corregir manualmente los 2 pedidos existentes en el Sheet (columnas desplazadas)
 3. Probar flujo completo pedido punta a punta (nuevo código)
-4. Fotos reales carrusel CRAFT
-5. Imagen corporativa hub central
-6. Migrar WhatsApp de Twilio a API oficial Meta (futuro)
-7. Agregar datos reales en TFI secciones 4.2 y 4.5
+4. Probar flujo pago → supervisor confirma → vendedor notificado (nuevo en 2026-06-15)
+5. Ranking: triple inconsistencia de headers — nunca devuelve datos (pendiente de fix)
+6. Sin tabla CLIENTES — no hay registro de a quién vende el vendedor
+7. Descuento de campaña se evalúa por item, no por total del carrito (bug de lógica)
+8. Fotos reales carrusel CRAFT
+9. Imagen corporativa hub central
+10. Migrar WhatsApp de Twilio a API oficial Meta (futuro)
+11. Agregar datos reales en TFI secciones 4.2 y 4.5
+
+## PROBLEMAS DETECTADOS (análisis 2026-06-15) — sin corregir aún
+- **RANKING** siempre vacío: headers en setup_sheets, sheets_client y display del bot
+  son todos distintos. Ningún job calcula el ranking dinámicamente.
+- **Descuento**: `aplicar_mejor_descuento()` recibe subtotal de un item, no total del carrito.
+- **Baja**: solicitud no toca VENDEDORES, no desactiva al vendedor.
+- **Panel supervisor**: sin flujo para validar consultas IA desde el bot.
+- **Sin CLIENTES**: pedidos no registran el cliente final.
+- **Límite de crédito**: $100,000 hardcodeado, no por vendedor.
 
 ## CÓMO USAR ESTE ARCHIVO
 Al inicio de cada sesión decile a Claude Code:
