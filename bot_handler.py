@@ -310,11 +310,18 @@ def procesar(phone: str, texto: str, media_url: str | None = None) -> str:
     texto = (texto or "").strip()
     t = texto.lower()
 
+    # Ignorar silenciosamente mensajes de control del sandbox de Twilio
+    if t.startswith("join ") or t == "join":
+        logger.info("procesar() → mensaje de join sandbox ignorado para phone=%r", phone)
+        return ""
+
     session = session_store.get(phone)
     estado = session.get("estado", MENU)
+    logger.info("procesar() → estado=%r  empresa=%r", estado, session.get("empresa"))
 
     vendedor = session.get("vendedor") or sheets_client.get_vendedora_by_phone(phone)
     if not vendedor:
+        logger.warning("procesar() → vendedor no encontrado para phone=%r", phone)
         return (
             "👋 Hola! Soy el asistente de *CUBOCRAFT*.\n"
             "No encontré tu cuenta registrada. "
@@ -326,6 +333,7 @@ def procesar(phone: str, texto: str, media_url: str | None = None) -> str:
     sup_phone = (config.SUPERVISORA_PHONE or "").lstrip("+")
     es_supervisor = phone.removeprefix("whatsapp:").lstrip("+") == sup_phone
     nombre = vendedor.get("Nombre", "")
+    logger.info("procesar() → vendedor=%r  es_supervisor=%s", nombre, es_supervisor)
 
     # ── Navegación global ────────────────────────────────────────────────────
     if t == "hola":

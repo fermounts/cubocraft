@@ -106,27 +106,48 @@ def _extract_evolution(data: dict):
 @app.route("/webhook", methods=["POST"])
 def webhook():
     content_type = request.content_type or ""
-    logger.info("Webhook received | content-type: %s", content_type)
+    logger.info("━━━ WEBHOOK IN ━━━ content-type=%r", content_type)
 
-    if "application/json" in content_type:
-        data = request.get_json(force=True, silent=True) or {}
-        logger.info("Evolution payload keys: %s", list(data.keys()))
-        phone, text, media_url = _extract_evolution(data)
-        provider = "evolution"
-    else:
-        logger.info("Twilio form data: %s", dict(request.form))
-        phone, text, media_url = _extract_twilio(request)
-        provider = "twilio"
+    # ── Extraer datos del request ────────────────────────────────────────────
+    try:
+        if "application/json" in content_type:
+            data = request.get_json(force=True, silent=True) or {}
+            logger.info("Evolution payload keys: %s", list(data.keys()))
+            phone, text, media_url = _extract_evolution(data)
+            provider = "evolution"
+        else:
+            form = dict(request.form)
+            logger.info("Twilio form keys: %s", list(form.keys()))
+            logger.info("Twilio From=%r Body=%r NumMedia=%r",
+                        form.get("From"), form.get("Body"), form.get("NumMedia"))
+            phone, text, media_url = _extract_twilio(request)
+            provider = "twilio"
+    except Exception:
+        logger.exception("ERROR extrayendo datos del request")
+        return jsonify({"status": "parse_error"}), 200
 
     if not phone:
-        logger.warning("Could not extract phone from request")
+        logger.warning("Phone vacío — request ignorado. Form: %s", dict(request.form))
         return jsonify({"status": "ignored"}), 200
 
-    logger.info("Message from %s [%s]: %r | media=%s", phone, provider, text, bool(media_url))
+    logger.info("phone=%r provider=%r text=%r media=%s", phone, provider, text, bool(media_url))
 
-    respuesta = bot_handler.procesar(phone, text, media_url=media_url)
+    # ── Procesar con el bot ──────────────────────────────────────────────────
+    try:
+        respuesta = bot_handler.procesar(phone, text, media_url=media_url)
+        logger.info("bot respuesta len=%d: %r", len(respuesta or ""), (respuesta or "")[:80])
+    except Exception:
+        logger.exception("ERROR no manejado en bot_handler.procesar() phone=%r text=%r", phone, text)
+        return jsonify({"status": "bot_error"}), 200
+
+    # ── Enviar respuesta ─────────────────────────────────────────────────────
     if respuesta:
-        whatsapp_client.enviar(phone, respuesta, provider=provider)
+        try:
+            whatsapp_client.enviar(phone, respuesta, provider=provider)
+        except Exception:
+            logger.exception("ERROR enviando respuesta a phone=%r", phone)
+    else:
+        logger.warning("Bot devolvió respuesta vacía para phone=%r text=%r", phone, text)
 
     return jsonify({"status": "ok"}), 200
 

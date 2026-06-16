@@ -1,6 +1,6 @@
 flask
 twilio
-gspread
+gspread>=6.2.1
 google-auth
 google-genai
 google-generativeai
