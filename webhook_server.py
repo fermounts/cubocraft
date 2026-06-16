@@ -136,6 +136,24 @@ def health():
     return jsonify({"status": "healthy", "app": "CUBOCRAFT"}), 200
 
 
+@app.route("/debug-config")
+def debug_config():
+    """Muestra qué variables de entorno están seteadas (sin exponer valores)."""
+    import config as cfg
+    vars_status = {
+        "TWILIO_ACCOUNT_SID":  bool(cfg.TWILIO_ACCOUNT_SID),
+        "TWILIO_AUTH_TOKEN":   bool(cfg.TWILIO_AUTH_TOKEN),
+        "TWILIO_PHONE_NUMBER": bool(cfg.TWILIO_PHONE_NUMBER),
+        "TWILIO_PHONE_NUMBER_value": (cfg.TWILIO_PHONE_NUMBER or "")[:6] + "..." if cfg.TWILIO_PHONE_NUMBER else "(vacío)",
+        "GOOGLE_SHEET_ID":     bool(cfg.GOOGLE_SHEET_ID),
+        "GOOGLE_CREDS_JSON":   bool(cfg.GOOGLE_CREDS_JSON),
+        "GEMINI_API_KEY":      bool(cfg.GEMINI_API_KEY),
+        "SUPERVISORA_PHONE":   bool(cfg.SUPERVISORA_PHONE),
+        "SUPERVISORA_PHONE_value": cfg.SUPERVISORA_PHONE or "(vacío)",
+    }
+    return jsonify(vars_status), 200
+
+
 @app.route("/")
 def index():
     return send_from_directory(".", "index.html")

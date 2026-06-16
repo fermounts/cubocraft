@@ -26,9 +26,15 @@ def enviar(phone: str, mensaje: str, provider: str = "twilio") -> None:
 
 
 def _enviar_twilio(phone: str, mensaje: str) -> None:
+    if not config.TWILIO_ACCOUNT_SID or not config.TWILIO_AUTH_TOKEN:
+        logger.error("TWILIO_ACCOUNT_SID o TWILIO_AUTH_TOKEN no configurados — mensaje no enviado a %s", phone)
+        return
+    if not config.TWILIO_PHONE_NUMBER:
+        logger.error("TWILIO_PHONE_NUMBER no configurado — mensaje no enviado a %s", phone)
+        return
     try:
         to = f"whatsapp:{phone}" if not phone.startswith("whatsapp:") else phone
-        frm = config.TWILIO_PHONE_NUMBER or ""
+        frm = config.TWILIO_PHONE_NUMBER
         if not frm.startswith("whatsapp:"):
             frm = f"whatsapp:{frm}"
         msg = _get_twilio().messages.create(body=mensaje, from_=frm, to=to)
