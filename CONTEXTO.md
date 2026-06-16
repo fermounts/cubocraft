@@ -1,5 +1,5 @@
 # CONTEXTO PROYECTO CUBOCRAFT
-Última actualización: 2026-06-15
+Última actualización: 2026-06-16
 
 ## DATOS GENERALES
 - Carpeta local: `/home/fernan/cubocraft/`
@@ -39,24 +39,33 @@ VENDEDORES, PRODUCTOS, PEDIDOS, PAGOS, CAMPAÑAS, RANKING, CANDIDATOS,
 CONOCIMIENTO_TECNICO, FICHAS_TECNICAS_BORRADOR, BASE_CONOCIMIENTO, PENDIENTES_VALIDACION
 
 ### Hojas con datos reales
-- **VENDEDORES** — 1 registro: V001 Fernando
+- **VENDEDORES** — 3 registros: V001 Fernando (5491134912395), V002 Fernanda (5491134912504), V003 Tomás (5491127104535)
 - **PRODUCTOS** — 80 productos (40 EPP + 40 Materiales de Construcción)
-- **PEDIDOS** — 2 pedidos de prueba (datos de columnas desplazados — ver nota abajo)
+- **PEDIDOS** — 11 pedidos: 3 de Fernando (reales), 4 de Fernanda y 4 de Tomás (prueba, corregidos 2026-06-16)
 - **CONOCIMIENTO_TECNICO** — 11 normativas completas
-- **BASE_CONOCIMIENTO** — fichas técnicas parciales, en proceso de completar
+- **BASE_CONOCIMIENTO** — 36 fichas técnicas generadas (44 pendientes por límite Gemini)
+- **RANKING** — calculado con datos reales de junio 2026 (actualizado 2026-06-16)
 
 ### Hojas completadas 2026-06-06
 - **PAGOS** — 5 registros de prueba; columna Anulado eliminada (ver abajo)
 - **CAMPAÑAS** — 2 campañas activas cargadas
-- **RANKING** — V001 Fernando en posición 1
 - **CANDIDATOS** — 3 prospectos de muestra
 
+### RANKING — datos reales junio 2026 (actualizado 2026-06-16)
+| Pos | Vendedor | Total mes | Categoría |
+|-----|----------|-----------|-----------|
+| #1  | Fernando (V001) | $112.837,50 | Oro    |
+| #2  | Fernanda (V002) | $68.752,50  | Plata  |
+| #3  | Tomás    (V003) | $40.280,00  | Bronce |
+
+⚠️ El bot todavía no muestra el ranking porque `get_ranking_vendedora()` busca columna
+`Período` que no existe en el Sheet. Bug #5 de pendientes.
+
 ### BASE_CONOCIMIENTO — EN PROCESO
-- 80 fichas técnicas generándose con Gemini 2.5 Flash
-- Script corriendo en background: `tail -f /tmp/fichas_loop.log` para monitorear
-- Delay entre requests: 65 segundos (free tier Gemini)
+- 36/80 fichas generadas; se corta por límite diario de Gemini (20 req/día free tier)
+- Para retomar: `python3 completar_sheet.py --solo-fichas`
 - Checkpoint en: `completar_sheet_progress.json`
-- Si se interrumpe: `python3 completar_sheet.py --solo-fichas` retoma desde donde quedó
+- Delay entre requests: 65 segundos; 90 extra si hay rate limit 429
 
 ## ESTRUCTURA DE COLUMNAS (definitiva)
 
@@ -66,9 +75,9 @@ Cantidad | Precio_Unit | Descuento_Pct | Total | ID_Campaña | Estado
 
 Estados válidos: PENDIENTE · CANCELADO
 
-⚠️ Los 2 pedidos existentes (P20260602135317, P20260602140406) tienen columnas
+⚠️ Los pedidos P20260602135317 y P20260602140406 (los primeros de prueba) tienen columnas
 desplazadas por el bug original — Fecha tiene "V001" y ID_Campaña tiene la fecha.
-Corregir a mano en el Sheet si se necesitan.
+Corregir a mano en el Sheet si se necesitan. (Todos los demás pedidos están correctos.)
 
 ### PAGOS (8 columnas — columna Anulado eliminada el 2026-06-06)
 ID_Pago | Fecha | ID_Vendedor | Nombre_Vendedor | Monto | Metodo | Comprobante | Estado
@@ -163,6 +172,9 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - Pipeline validación: PENDIENTES_VALIDACION → BASE_CONOCIMIENTO (job horario)
 - Resumen diario al supervisor a las 20hs Argentina
 - Cancelación de pedidos y anulación de pagos operativos (2026-06-06)
+- Pagos con confirmación del supervisor (2026-06-15): graba PENDIENTE, supervisor confirma desde panel 9→B
+- Mensajes "join [keyword]" del sandbox de Twilio ignorados silenciosamente (2026-06-16)
+- Logging detallado en webhook: From, Body, estado de sesión, errores con stack trace
 
 ## ESTADO WEB — OPERATIVA
 - 3 secciones: Hub central / CUBO / CRAFT
@@ -176,12 +188,46 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - Correcciones de tutora aplicadas en v5: context stuffing en lugar de RAG
 - Pendiente: agregar datos reales de pruebas en secciones 4.2 y 4.5
 
+## CAMBIOS EN CÓDIGO (2026-06-16)
+
+### webhook_server.py
+- **try/except alrededor de `bot_handler.procesar()` y `enviar()`**: antes una excepción
+  devolvía 500 a Twilio que lo interpretaba como fallo silencioso. Ahora siempre devuelve 200.
+- **Logging detallado al inicio del webhook**: loguea `From`, `Body`, `NumMedia`, estado de
+  sesión, nombre del vendedor y longitud de la respuesta generada.
+- **`/debug-config` endpoint**: muestra qué variables de entorno están seteadas en producción
+  (sin exponer valores). Útil para diagnosticar Render: `curl https://cubocraft.onrender.com/debug-config`
+
+### bot_handler.py
+- **Guard para mensajes "join [keyword]"**: cuando un número nuevo entra al sandbox de Twilio
+  manda "join keyword". Antes el bot lo trataba como pregunta libre y llamaba a Gemini.
+  Ahora retorna `""` y el webhook no intenta enviar respuesta.
+- **Logs adicionales en `procesar()`**: estado, empresa y nombre del vendedor en cada llamada.
+
+### whatsapp_client.py
+- **Validación explícita de credenciales**: `_enviar_twilio()` verifica que
+  `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y `TWILIO_PHONE_NUMBER` estén seteados
+  antes de intentar enviar. Antes fallaba silenciosamente con excepción atrapada.
+
+### requirements.txt
+- `gspread>=6.2.1` — versión mínima fijada para garantizar soporte de `expected_headers`
+  en `get_all_records()`. Sin esto Render podía instalar una versión anterior y fallar.
+
+### PEDIDOS — correcciones de datos (2026-06-16, vía script directo al Sheet)
+- 8 fechas de V002 (Fernanda) y V003 (Tomás) normalizadas: `2026-06-XX` → `2026-06-XX 00:00:00`
+- `P20260612001` Total: `9562,5` → `9562.5` (coma → punto)
+
+### RANKING — calculado con datos reales junio 2026 (2026-06-16)
+- Reemplazó los datos estáticos de prueba por el ranking calculado de los 11 pedidos de junio.
+- Calculado con script directo al Sheet (no hay job automático aún).
+
 ## PENDIENTES DEL PROYECTO
-1. Completar BASE_CONOCIMIENTO (80 fichas — corriendo en background, 26/62 al 2026-06-15)
-2. Corregir manualmente los 2 pedidos existentes en el Sheet (columnas desplazadas)
-3. Probar flujo completo pedido punta a punta (nuevo código)
-4. Probar flujo pago → supervisor confirma → vendedor notificado (nuevo en 2026-06-15)
-5. Ranking: triple inconsistencia de headers — nunca devuelve datos (pendiente de fix)
+1. Completar BASE_CONOCIMIENTO (36/80 fichas — retomar con `python3 completar_sheet.py --solo-fichas`)
+2. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
+3. Probar flujo completo pedido punta a punta
+4. Probar flujo pago → supervisor confirma → vendedor notificado
+5. **Fix ranking en el bot**: `get_ranking_vendedora()` busca columna `Período` que no existe
+   en el Sheet. Cambiar para buscar por `ID_Vendedor` directamente y devolver el mes actual.
 6. Sin tabla CLIENTES — no hay registro de a quién vende el vendedor
 7. Descuento de campaña se evalúa por item, no por total del carrito (bug de lógica)
 8. Fotos reales carrusel CRAFT
@@ -189,9 +235,10 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 10. Migrar WhatsApp de Twilio a API oficial Meta (futuro)
 11. Agregar datos reales en TFI secciones 4.2 y 4.5
 
-## PROBLEMAS DETECTADOS (análisis 2026-06-15) — sin corregir aún
-- **RANKING** siempre vacío: headers en setup_sheets, sheets_client y display del bot
-  son todos distintos. Ningún job calcula el ranking dinámicamente.
+## PROBLEMAS CONOCIDOS — sin corregir aún
+- **Ranking en el bot**: `get_ranking_vendedora()` busca columna `Período` que no existe.
+  El bot siempre muestra "No tenés datos de ranking". El Sheet tiene los datos correctos
+  pero la función no los encuentra.
 - **Descuento**: `aplicar_mejor_descuento()` recibe subtotal de un item, no total del carrito.
 - **Baja**: solicitud no toca VENDEDORES, no desactiva al vendedor.
 - **Panel supervisor**: sin flujo para validar consultas IA desde el bot.
