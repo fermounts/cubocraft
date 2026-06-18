@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 
 import google.generativeai as genai
 
@@ -476,17 +477,22 @@ def _ejecutar_accion(
         return "\n".join(lines) + _post_prompt()
 
     if accion == "ranking":
-        rank = sheets_client.get_ranking_vendedora(vendedor)
         session_store.set(phone, POST_ACCION, vendedor=vendedor)
-        if rank:
-            return (
-                "🏆 *Tu ranking:*\n"
-                f"Posición: #{rank.get('Posición_Semana','?')}\n"
-                f"Categoría: {rank.get('Categoría','?')}\n"
-                f"Ventas semana: ${rank.get('Ventas_Semana','?')} | Mes: ${rank.get('Ventas_Mes','?')}"
-                + _post_prompt()
+        ranking = sheets_client.calcular_ranking_empresa(empresa)
+        if not ranking:
+            return f"No hay pedidos de {empresa} registrados este mes aún." + _post_prompt()
+        now = datetime.now()
+        mes_es = sheets_client._MESES_ES.get(now.month, str(now.month))
+        lines = [f"🏆 *Ranking {empresa} — {mes_es} {now.year}*\n"]
+        emojis = {1: "🥇", 2: "🥈", 3: "🥉"}
+        vid_actual = str(vendedor.get("ID", ""))
+        for r in ranking:
+            emoji = emojis.get(r["Posición"], f"#{r['Posición']}")
+            marker = " ← vos" if r["ID_Vendedor"] == vid_actual else ""
+            lines.append(
+                f"{emoji} {r['Nombre']} — ${r['Total_Mes']:,.2f} ({r['Categoría']}){marker}"
             )
-        return "No tenés datos de ranking aún." + _post_prompt()
+        return "\n".join(lines) + _post_prompt()
 
     if accion == "ia":
         session_store.set(phone, CONSULTA_IA, vendedor=vendedor)

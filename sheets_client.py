@@ -12,7 +12,11 @@ logger = logging.getLogger(__name__)
 
 LIMITE_CREDITO = 100_000
 
-_RANKING_HEADERS = ["Período", "ID_Vendedor", "Nombre", "Posición", "Monto_Total", "Cantidad_Pedidos"]
+_MESES_ES = {
+    1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
+    5: "mayo", 6: "junio", 7: "julio", 8: "agosto",
+    9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre",
+}
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -407,20 +411,52 @@ def aplicar_mejor_descuento(
 
 # ── Ranking ───────────────────────────────────────────────────────────────────
 
-def get_ranking_vendedora(vendedor: dict) -> dict | None:
+def calcular_ranking_empresa(empresa: str) -> list[dict]:
+    """Ranking mensual filtrando pedidos por prefijo de producto (EPP→CUBO, MC→CRAFT)."""
     try:
-        ws = _get_sheet("RANKING")
-        vid = str(vendedor.get("ID", ""))
-        now = datetime.now()
-        iso = now.isocalendar()
-        week_str = f"W{iso[0]}-{iso[1]:02d}"
-        for r in ws.get_all_records():
-            if str(r.get("ID_Vendedor", "")) == vid and str(r.get("Período", "")) == week_str:
-                return r
-        return None
+        mes_actual = datetime.now().strftime("%Y-%m")
+        ws = _get_sheet("PEDIDOS")
+        pedidos = ws.get_all_records()
+
+        totales: dict[str, dict] = {}
+        for p in pedidos:
+            if str(p.get("Estado", "")).upper() == "CANCELADO":
+                continue
+            if not str(p.get("Fecha", "")).startswith(mes_actual):
+                continue
+            id_prod = str(p.get("ID_Producto", "")).upper()
+            if empresa == "CUBO" and not id_prod.startswith("EPP"):
+                continue
+            if empresa == "CRAFT" and not id_prod.startswith("MC"):
+                continue
+            vid = str(p.get("ID_Vendedor", ""))
+            nombre = str(p.get("Nombre_Vendedor", ""))
+            try:
+                total = float(str(p.get("Total", "0")).replace(",", "."))
+            except ValueError:
+                total = 0.0
+            if vid not in totales:
+                totales[vid] = {"nombre": nombre, "total": 0.0}
+            totales[vid]["total"] += total
+
+        if not totales:
+            return []
+
+        cats = ["Oro", "Plata", "Bronce"]
+        ranking = sorted(totales.items(), key=lambda x: x[1]["total"], reverse=True)
+        return [
+            {
+                "ID_Vendedor": vid,
+                "Nombre": info["nombre"],
+                "Total_Mes": round(info["total"], 2),
+                "Posición": pos,
+                "Categoría": cats[pos - 1] if pos <= 3 else "—",
+            }
+            for pos, (vid, info) in enumerate(ranking, start=1)
+        ]
     except Exception as e:
-        logger.error("get_ranking_vendedora error: %s", e)
-        return None
+        logger.error("calcular_ranking_empresa empresa=%r error: %s", empresa, e)
+        return []
 
 
 # ── Candidatos ────────────────────────────────────────────────────────────────
@@ -450,6 +486,7 @@ def pasar_candidata_a_vendedoras(candidata: dict) -> str:
             str(candidata.get("Zona", "")),
             str(candidata.get("Perfil", "")),
             "SI",
+            "AMBAS",
         ])
         logger.info("Candidata %s → VENDEDORES id=%s", candidata.get("Nombre"), nueva_id)
         return nueva_id
