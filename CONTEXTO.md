@@ -1,5 +1,5 @@
 # CONTEXTO PROYECTO CUBOCRAFT
-Última actualización: 2026-06-16
+Última actualización: 2026-06-18
 
 ## DATOS GENERALES
 - Carpeta local: `/home/fernan/cubocraft/`
@@ -39,7 +39,7 @@ VENDEDORES, PRODUCTOS, PEDIDOS, PAGOS, CAMPAÑAS, RANKING, CANDIDATOS,
 CONOCIMIENTO_TECNICO, FICHAS_TECNICAS_BORRADOR, BASE_CONOCIMIENTO, PENDIENTES_VALIDACION
 
 ### Hojas con datos reales
-- **VENDEDORES** — 3 registros: V001 Fernando (5491134912395), V002 Fernanda (5491134912504), V003 Tomás (5491127104535)
+- **VENDEDORES** — 3 registros: V001 Fernando (5491134912395), V002 Fernanda (5491134912504), V003 Tomás (5491127104535). Columnas: ID, Nombre, Teléfono, Zona, Perfil, Activa, **Empresa** (AMBAS para los 3)
 - **PRODUCTOS** — 80 productos (40 EPP + 40 Materiales de Construcción)
 - **PEDIDOS** — 11 pedidos: 3 de Fernando (reales), 4 de Fernanda y 4 de Tomás (prueba, corregidos 2026-06-16)
 - **CONOCIMIENTO_TECNICO** — 11 normativas completas
@@ -58,8 +58,8 @@ CONOCIMIENTO_TECNICO, FICHAS_TECNICAS_BORRADOR, BASE_CONOCIMIENTO, PENDIENTES_VA
 | #2  | Fernanda (V002) | $68.752,50  | Plata  |
 | #3  | Tomás    (V003) | $40.280,00  | Bronce |
 
-⚠️ El bot todavía no muestra el ranking porque `get_ranking_vendedora()` busca columna
-`Período` que no existe en el Sheet. Bug #5 de pendientes.
+El bot muestra el ranking correcto: opción 5 calcula en tiempo real desde PEDIDOS filtrando
+por prefijo de producto (EPP→CUBO, MC→CRAFT). Marca "← vos" al vendedor actual.
 
 ### BASE_CONOCIMIENTO — EN PROCESO
 - 36/80 fichas generadas; se corta por límite diario de Gemini (20 req/día free tier)
@@ -175,6 +175,7 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - Pagos con confirmación del supervisor (2026-06-15): graba PENDIENTE, supervisor confirma desde panel 9→B
 - Mensajes "join [keyword]" del sandbox de Twilio ignorados silenciosamente (2026-06-16)
 - Logging detallado en webhook: From, Body, estado de sesión, errores con stack trace
+- Ranking (opción 5) operativo (2026-06-18): muestra ranking real del mes filtrado por empresa de la sesión
 
 ## ESTADO WEB — OPERATIVA
 - 3 secciones: Hub central / CUBO / CRAFT
@@ -187,6 +188,26 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - Documento actual: CUBOCRAFT_TFI_v5.docx (en carpeta Proyecto Integrador de Drive)
 - Correcciones de tutora aplicadas en v5: context stuffing en lugar de RAG
 - Pendiente: agregar datos reales de pruebas en secciones 4.2 y 4.5
+
+## CAMBIOS EN CÓDIGO (2026-06-18)
+
+### VENDEDORES — columna Empresa agregada
+- Nueva columna G: `Empresa` con valor `AMBAS` para los 3 vendedores existentes.
+- `pasar_candidata_a_vendedoras()` ahora incluye `"AMBAS"` al crear vendedores nuevos.
+- `get_vendedora_by_phone()` y `get_vendedor_by_id()` devuelven el campo `Empresa` automáticamente.
+
+### sheets_client.py — Ranking reescrito
+- Eliminada `get_ranking_vendedora()` (buscaba columna `Período` que no existe).
+- Nueva función `calcular_ranking_empresa(empresa)`: calcula ranking en tiempo real desde
+  la hoja PEDIDOS, filtrando por prefijo de ID_Producto (EPP→CUBO, MC→CRAFT),
+  excluyendo CANCELADOS, filtrando por mes actual.
+- Retorna lista ordenada de dicts con Posición, Nombre, Total_Mes, Categoría.
+
+### bot_handler.py — Opción 5 operativa
+- Usa `calcular_ranking_empresa(empresa)` con la empresa de la sesión actual.
+- Muestra ranking completo del mes con 🥇🥈🥉 y marca "← vos" al vendedor actual.
+- Si empresa es CUBO y el vendedor eligió CUBO en esa sesión → ve ranking de EPP.
+- Si elige CRAFT → ve ranking de materiales de construcción.
 
 ## CAMBIOS EN CÓDIGO (2026-06-16)
 
@@ -222,12 +243,11 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - Calculado con script directo al Sheet (no hay job automático aún).
 
 ## PENDIENTES DEL PROYECTO
-1. Completar BASE_CONOCIMIENTO (36/80 fichas — retomar con `python3 completar_sheet.py --solo-fichas`)
+1. Completar BASE_CONOCIMIENTO (en progreso — `python3 completar_sheet.py --solo-fichas`)
 2. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
 3. Probar flujo completo pedido punta a punta
 4. Probar flujo pago → supervisor confirma → vendedor notificado
-5. **Fix ranking en el bot**: `get_ranking_vendedora()` busca columna `Período` que no existe
-   en el Sheet. Cambiar para buscar por `ID_Vendedor` directamente y devolver el mes actual.
+5. ~~Fix ranking en el bot~~ — **RESUELTO 2026-06-18**
 6. Sin tabla CLIENTES — no hay registro de a quién vende el vendedor
 7. Descuento de campaña se evalúa por item, no por total del carrito (bug de lógica)
 8. Fotos reales carrusel CRAFT
@@ -236,9 +256,7 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 11. Agregar datos reales en TFI secciones 4.2 y 4.5
 
 ## PROBLEMAS CONOCIDOS — sin corregir aún
-- **Ranking en el bot**: `get_ranking_vendedora()` busca columna `Período` que no existe.
-  El bot siempre muestra "No tenés datos de ranking". El Sheet tiene los datos correctos
-  pero la función no los encuentra.
+- ~~**Ranking en el bot**~~: resuelto 2026-06-18.
 - **Descuento**: `aplicar_mejor_descuento()` recibe subtotal de un item, no total del carrito.
 - **Baja**: solicitud no toca VENDEDORES, no desactiva al vendedor.
 - **Panel supervisor**: sin flujo para validar consultas IA desde el bot.
