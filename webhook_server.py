@@ -1,13 +1,16 @@
+import functools
 import logging
 import os
+import re
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, send_file, session
 import pathlib
 import pytz
 
 import bot_handler
+import config
 import sheets_client
 import whatsapp_client
 
@@ -18,8 +21,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 _STATIC_DIR = pathlib.Path(__file__).parent / "static"
+_BASE_DIR    = pathlib.Path(__file__).parent
 
 app = Flask(__name__, static_folder=str(_STATIC_DIR), static_url_path="/static")
+app.secret_key = config.SECRET_KEY
 
 
 # ── Resumen diario al supervisor ──────────────────────────────────────────────
@@ -178,6 +183,59 @@ def debug_config():
 @app.route("/")
 def index():
     return send_from_directory(".", "index.html")
+
+
+# ── Dashboard ─────────────────────────────────────────────────────────────────
+
+def _login_required(f):
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        if "vid" not in session:
+            return jsonify({"error": "no_auth"}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route("/dashboard")
+def dashboard():
+    return send_file(str(_BASE_DIR / "dashboard.html"))
+
+
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    data = request.get_json(force=True, silent=True) or {}
+    phone = str(data.get("phone", "")).strip()
+    pin   = str(data.get("pin", "")).strip()
+    if not phone or not pin:
+        return jsonify({"error": "Teléfono y PIN requeridos"}), 400
+    vendedor = sheets_client.validar_login(phone, pin)
+    if not vendedor:
+        return jsonify({"error": "Teléfono o PIN incorrecto"}), 401
+    sup_phone = re.sub(r"[^\d]", "", config.SUPERVISORA_PHONE or "")
+    v_phone   = re.sub(r"[^\d]", "", str(vendedor.get("Teléfono", "")))
+    role = "supervisor" if (sup_phone and v_phone == sup_phone) else "vendedor"
+    session["vid"]    = str(vendedor["ID"])
+    session["nombre"] = str(vendedor["Nombre"])
+    session["role"]   = role
+    return jsonify({"ok": True, "nombre": vendedor["Nombre"], "role": role})
+
+
+@app.route("/api/dashboard-data")
+@_login_required
+def api_dashboard_data():
+    vid  = session["vid"]
+    role = session["role"]
+    if role == "supervisor":
+        data = sheets_client.get_dashboard_supervisor()
+    else:
+        data = sheets_client.get_dashboard_vendedor(vid)
+    return jsonify({"role": role, "nombre": session["nombre"], **data})
+
+
+@app.route("/api/logout", methods=["POST"])
+def api_logout():
+    session.clear()
+    return jsonify({"ok": True})
 
 
 if __name__ == "__main__":

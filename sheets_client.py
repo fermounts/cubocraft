@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from datetime import date, datetime, timedelta
 
 import gspread
@@ -89,6 +90,21 @@ def get_vendedor_by_id(vid: str) -> dict | None:
         return None
     except Exception as e:
         logger.error("get_vendedor_by_id error: %s", e)
+        return None
+
+
+def validar_login(phone: str, pin: str) -> dict | None:
+    """Valida teléfono + PIN contra VENDEDORES. Devuelve dict del vendedor o None."""
+    try:
+        ws = _get_sheet("VENDEDORES")
+        phone_norm = re.sub(r"[^\d]", "", phone)
+        for r in ws.get_all_records():
+            stored = re.sub(r"[^\d]", "", str(r.get("Teléfono", "")))
+            if stored == phone_norm and str(r.get("PIN", "")).strip() == str(pin).strip():
+                return r
+        return None
+    except Exception as e:
+        logger.error("validar_login error: %s", e)
         return None
 
 
@@ -410,6 +426,143 @@ def aplicar_mejor_descuento(
 
 
 # ── Ranking ───────────────────────────────────────────────────────────────────
+
+def _safe_float(v) -> float:
+    try:
+        return float(str(v).replace(",", ".") if v else "0")
+    except (ValueError, TypeError):
+        return 0.0
+
+
+def _calcular_ranking_total(mes_actual: str, pedidos: list[dict]) -> list[dict]:
+    """Ranking combinado (todos los productos) del mes, acepta lista de pedidos ya cargada."""
+    totales: dict[str, dict] = {}
+    for p in pedidos:
+        if str(p.get("Estado", "")).upper() == "CANCELADO":
+            continue
+        if not str(p.get("Fecha", "")).startswith(mes_actual):
+            continue
+        vid = str(p.get("ID_Vendedor", ""))
+        nombre = str(p.get("Nombre_Vendedor", ""))
+        total = _safe_float(p.get("Total", 0))
+        if vid not in totales:
+            totales[vid] = {"nombre": nombre, "total": 0.0}
+        totales[vid]["total"] += total
+    if not totales:
+        return []
+    cats = ["Oro", "Plata", "Bronce"]
+    ranking = sorted(totales.items(), key=lambda x: x[1]["total"], reverse=True)
+    return [
+        {
+            "ID_Vendedor": vid,
+            "Nombre": info["nombre"],
+            "Total_Mes": round(info["total"], 2),
+            "Posición": pos,
+            "Categoría": cats[pos - 1] if pos <= 3 else "—",
+        }
+        for pos, (vid, info) in enumerate(ranking, start=1)
+    ]
+
+
+def get_dashboard_supervisor() -> dict:
+    """Datos para el dashboard del supervisor: resumen mes, año, ranking y campañas."""
+    try:
+        mes_actual = datetime.now().strftime("%Y-%m")
+        anio_actual = str(datetime.now().year)
+
+        pedidos = _get_sheet("PEDIDOS").get_all_records()
+        pagos   = _get_sheet("PAGOS").get_all_records()
+
+        total_mes = 0.0
+        cant_pedidos_mes = 0
+        total_anio = 0.0
+        for p in pedidos:
+            if str(p.get("Estado", "")).upper() == "CANCELADO":
+                continue
+            fecha = str(p.get("Fecha", ""))
+            total = _safe_float(p.get("Total", 0))
+            if fecha.startswith(mes_actual):
+                total_mes += total
+                cant_pedidos_mes += 1
+            if fecha.startswith(anio_actual):
+                total_anio += total
+
+        pagos_pend = sum(
+            1 for p in pagos
+            if str(p.get("Estado", "")).upper() == "PENDIENTE"
+        )
+
+        ranking = _calcular_ranking_total(mes_actual, pedidos)
+
+        hoy = date.today().isoformat()
+        campanias_raw = _get_sheet("CAMPAÑAS").get_all_records()
+        campanias = [
+            {
+                "Nombre": c.get("Nombre", ""),
+                "Descuento_Pct": c.get("Descuento_Pct", 0),
+                "Fecha_Fin": c.get("Fecha_Fin", ""),
+            }
+            for c in campanias_raw
+            if str(c.get("Activa", "")).upper() in ("SI", "1", "TRUE")
+            and str(c.get("Fecha_Fin", "9999")) >= hoy
+        ]
+
+        return {
+            "total_mes": round(total_mes, 2),
+            "cant_pedidos_mes": cant_pedidos_mes,
+            "pagos_pendientes": pagos_pend,
+            "total_anio": round(total_anio, 2),
+            "ranking": ranking,
+            "campanias": campanias,
+        }
+    except Exception as e:
+        logger.error("get_dashboard_supervisor error: %s", e)
+        return {}
+
+
+def get_dashboard_vendedor(vid: str) -> dict:
+    """Datos para el dashboard de un vendedor: mes, año, deuda, posición."""
+    try:
+        mes_actual = datetime.now().strftime("%Y-%m")
+        anio_actual = str(datetime.now().year)
+
+        pedidos = _get_sheet("PEDIDOS").get_all_records()
+
+        total_mes = 0.0
+        cant_mes = 0
+        total_anio = 0.0
+        for p in pedidos:
+            if str(p.get("Estado", "")).upper() == "CANCELADO":
+                continue
+            if str(p.get("ID_Vendedor", "")) != vid:
+                continue
+            fecha = str(p.get("Fecha", ""))
+            total = _safe_float(p.get("Total", 0))
+            if fecha.startswith(mes_actual):
+                total_mes += total
+                cant_mes += 1
+            if fecha.startswith(anio_actual):
+                total_anio += total
+
+        vendedor_dict = get_vendedor_by_id(vid) or {}
+        balance = get_balance_vendedor(vendedor_dict)
+
+        ranking_total = _calcular_ranking_total(mes_actual, pedidos)
+        posicion = next((r for r in ranking_total if r["ID_Vendedor"] == vid), None)
+
+        return {
+            "total_mes": round(total_mes, 2),
+            "cant_mes": cant_mes,
+            "total_anio": round(total_anio, 2),
+            "deuda_real": balance.get("deuda_real", 0),
+            "disponible": balance.get("disponible", 0),
+            "pagos_pendientes_monto": balance.get("pagos_pendientes", 0),
+            "ranking": posicion,
+        }
+    except Exception as e:
+        logger.error("get_dashboard_vendedor vid=%r error: %s", vid, e)
+        return {}
+
 
 def calcular_ranking_empresa(empresa: str) -> list[dict]:
     """Ranking mensual filtrando pedidos por prefijo de producto (EPP→CUBO, MC→CRAFT)."""
