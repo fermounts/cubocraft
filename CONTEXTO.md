@@ -39,7 +39,7 @@ VENDEDORES, PRODUCTOS, PEDIDOS, PAGOS, CAMPAÑAS, RANKING, CANDIDATOS,
 CONOCIMIENTO_TECNICO, FICHAS_TECNICAS_BORRADOR, BASE_CONOCIMIENTO, PENDIENTES_VALIDACION
 
 ### Hojas con datos reales
-- **VENDEDORES** — 3 registros: V001 Fernando (5491134912395), V002 Fernanda (5491134912504), V003 Tomás (5491127104535). Columnas: ID, Nombre, Teléfono, Zona, Perfil, Activa, **Empresa** (AMBAS para los 3)
+- **VENDEDORES** — 3 registros. Columnas: ID, Nombre, Teléfono, Zona, Perfil, Activa, **Empresa** (AMBAS para los 3), **PIN** (V001=1111, V002=2222, V003=3333 por defecto)
 - **PRODUCTOS** — 80 productos (40 EPP + 40 Materiales de Construcción)
 - **PEDIDOS** — 11 pedidos: 3 de Fernando (reales), 4 de Fernanda y 4 de Tomás (prueba, corregidos 2026-06-16)
 - **CONOCIMIENTO_TECNICO** — 11 normativas completas
@@ -183,13 +183,46 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - Carrusel CRAFT (mampostería, estructura, durlock)
 - Badge UOCRA con efecto animado
 - UptimeRobot manteniendo Render despierto
+- **Dashboard en /dashboard** (2026-06-18): login por WhatsApp + PIN, vistas supervisor y vendedor
 
 ## ESTADO TFI
 - Documento actual: CUBOCRAFT_TFI_v5.docx (en carpeta Proyecto Integrador de Drive)
 - Correcciones de tutora aplicadas en v5: context stuffing en lugar de RAG
 - Pendiente: agregar datos reales de pruebas en secciones 4.2 y 4.5
 
-## CAMBIOS EN CÓDIGO (2026-06-18)
+## CAMBIOS EN CÓDIGO (2026-06-18) — Dashboard
+
+### VENDEDORES — columna PIN agregada
+- Nueva columna H: `PIN` con valores por defecto 1111/2222/3333.
+- Usada para autenticación en el dashboard web.
+
+### sheets_client.py — funciones de dashboard
+- `validar_login(phone, pin)`: valida número de WhatsApp + PIN, devuelve dict del vendedor.
+- `_safe_float(v)`: helper para parsear totales con coma/punto.
+- `_calcular_ranking_total(mes, pedidos)`: ranking combinado (todos los productos) del mes.
+- `get_dashboard_supervisor()`: total mes, pedidos, pagos pendientes, acumulado año, ranking, campañas.
+- `get_dashboard_vendedor(vid)`: ventas mes, pedidos, deuda real, disponible, acumulado año, posición.
+
+### webhook_server.py — rutas del dashboard
+- `app.secret_key = config.SECRET_KEY` para sesiones Flask firmadas.
+- `GET  /dashboard` → sirve dashboard.html
+- `POST /api/login` → valida phone+PIN, crea sesión; rol supervisor si phone == SUPERVISORA_PHONE
+- `GET  /api/dashboard-data` → datos según rol (requiere sesión)
+- `POST /api/logout` → limpia sesión
+
+### dashboard.html — nueva página
+- SPA sin dependencias externas (solo Google Fonts ya usadas).
+- Login → pantalla centrada con form WhatsApp + PIN.
+- Sesión persistente: si hay sesión activa al entrar, va directo al dashboard.
+- Vista Supervisor: 4 KPIs (total mes, pedidos, pagos pendientes, acumulado año) + ranking + campañas.
+- Vista Vendedor: 4 KPIs (ventas, pedidos, deuda, acumulado año) + posición en ranking.
+- Mes en curso automático, no hardcodeado.
+- Estética idéntica a index.html (Barlow Condensed + Inter, paleta navy/blue/orange).
+
+⚠️ **Agregar `SECRET_KEY` como variable de entorno en Render** para seguridad en producción
+   (por defecto usa "changeme" definido en config.py).
+
+## CAMBIOS EN CÓDIGO (2026-06-18) — Ranking y Empresa
 
 ### VENDEDORES — columna Empresa agregada
 - Nueva columna G: `Empresa` con valor `AMBAS` para los 3 vendedores existentes.
@@ -243,7 +276,8 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - Calculado con script directo al Sheet (no hay job automático aún).
 
 ## PENDIENTES DEL PROYECTO
-1. Completar BASE_CONOCIMIENTO (en progreso — `python3 completar_sheet.py --solo-fichas`)
+1. ⚠️ **Agregar `SECRET_KEY` en Render** (variables de entorno) para seguridad del dashboard
+2. Completar BASE_CONOCIMIENTO (en progreso — `python3 completar_sheet.py --solo-fichas`)
 2. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
 3. Probar flujo completo pedido punta a punta
 4. Probar flujo pago → supervisor confirma → vendedor notificado
