@@ -736,6 +736,34 @@ def _handle_pedido_cantidad(phone: str, t: str, texto: str, vendedor: dict) -> s
     total_item = total_desc if (campana and desc_pct > 0) else subtotal
     desc_txt = f" (con {desc_pct:.0f}% dto.)" if (campana and desc_pct > 0) else ""
 
+    # ── Control de crédito ────────────────────────────────────────────────────
+    balance = sheets_client.get_balance_vendedor(vendedor)
+    disponible = balance["disponible"]
+    total_carrito = sum(
+        float(i["producto"].get("Precio_Vendedor", 0))
+        * i["cantidad"]
+        * (1 - i.get("descuento_pct", 0) / 100)
+        for i in carrito
+    )
+    if total_carrito + total_item > disponible:
+        maximo = max(0.0, disponible - total_carrito)
+        max_u = int(maximo / precio) if precio > 0 else 0
+        msg = (
+            f"⚠️ *Límite de crédito superado*\n\n"
+            f"*{producto.get('Nombre','?')}* ×{cantidad} = *${total_item:,.2f}*\n"
+            f"Tu crédito disponible: *${disponible:,.2f}*\n\n"
+        )
+        if max_u > 0:
+            msg += f"Podés pedir hasta *{max_u} unidad{'es' if max_u != 1 else ''}* de este producto{desc_txt}.\n\n"
+        elif maximo > 0:
+            msg += f"Podés gastar hasta *${maximo:,.2f}* en este producto.\n\n"
+        else:
+            msg += "No tenés crédito disponible para nuevos pedidos.\n\n"
+        msg += "💡 Hacé un depósito (opción 2 del menú) para liberar más crédito.\n\nIngresá otra cantidad o 0 para volver."
+        # No cambiamos el estado — el vendedor puede reintentar con menos unidades
+        return msg
+    # ─────────────────────────────────────────────────────────────────────────
+
     session_store.set(phone, PEDIDO_CONFIRMAR, vendedor=vendedor,
                       carrito=carrito,
                       cantidad_seleccionada=cantidad,
@@ -783,6 +811,21 @@ def _cerrar_pedido(phone: str, vendedor: dict, session: dict) -> str:
         session_store.set(phone, PEDIDO_CATEGORIA, vendedor=vendedor, carrito=[])
         return "El carrito está vacío.\n\n" + _render_categorias(empresa, [])
 
+    total_general = 0.0
+    resumen_lines = []
+    for item in carrito:
+        precio_u = float(item["producto"].get("Precio_Vendedor", 0))
+        qty      = item["cantidad"]
+        disc     = item.get("descuento_pct", 0)
+        item_total = round(precio_u * qty * (1 - disc / 100), 2)
+        total_general += item_total
+        desc_txt = f" (dto. {disc:.0f}%)" if disc > 0 else ""
+        resumen_lines.append(
+            f"  • {item['producto'].get('Nombre','?')} ×{qty} = ${item_total:,.2f}{desc_txt}"
+        )
+    total_general = round(total_general, 2)
+    resumen_texto = "\n".join(resumen_lines)
+
     ids_registrados = []
     for item in carrito:
         campana_id = (item.get("campana") or {}).get("ID", "")
@@ -792,17 +835,17 @@ def _cerrar_pedido(phone: str, vendedor: dict, session: dict) -> str:
         )
         ids_registrados.append(pid)
 
-    resumen = "\n".join(
-        f"  • {i['producto'].get('Nombre','?')} x{i['cantidad']}" for i in carrito
-    )
     session_store.set(phone, POST_ACCION, vendedor=vendedor)
     whatsapp_client.notificar_supervisora(
-        f"🛒 Pedido de {vendedor.get('Nombre','?')} ({vendedor.get('Teléfono','?')}):\n{resumen}"
+        f"🛒 Pedido de {vendedor.get('Nombre','?')} ({vendedor.get('Teléfono','?')}):\n"
+        f"{resumen_texto}\n\n"
+        f"*TOTAL: ${total_general:,.2f}*"
     )
     return (
         "🎉 *Pedido registrado!*\n"
         f"IDs: {', '.join(ids_registrados)}\n\n"
-        f"Resumen:\n{resumen}"
+        f"Resumen:\n{resumen_texto}\n\n"
+        f"*Total: ${total_general:,.2f}*"
         + _post_prompt()
     )
 
