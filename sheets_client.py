@@ -173,7 +173,7 @@ def registrar_pedido(
             str(cantidad),
             str(precio),
             str(descuento_pct),
-            str(subtotal),
+            f"{subtotal:.2f}",
             str(id_campana or ""),
             "PENDIENTE",
         ])
