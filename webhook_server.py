@@ -2,6 +2,7 @@ import functools
 import logging
 import os
 import re
+from datetime import date, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -46,6 +47,74 @@ def _enviar_resumen_diario() -> None:
         logger.error("Error enviando resumen diario: %s", e)
 
 
+def _fmt(n: float) -> str:
+    return f"${n:,.2f}"
+
+
+def _enviar_ranking_semanal() -> None:
+    """Job de los lunes 9hs ARG: ranking de la semana cerrada + mensajes por WhatsApp."""
+    try:
+        hoy    = date.today()                      # lunes
+        fin    = hoy - timedelta(days=1)           # domingo
+        inicio = hoy - timedelta(days=7)           # lunes anterior
+        semana_label = f"{inicio.day}/{inicio.month} al {fin.day}/{fin.month}"
+        logger.info("Ranking semanal: calculando semana %s → %s", inicio, fin)
+
+        ranking = sheets_client.calcular_ranking_semanal(inicio, fin)
+        if not ranking:
+            logger.info("Ranking semanal: sin ventas en la semana — sin mensajes")
+            return
+
+        vendedores = sheets_client.get_vendedores_activos()
+        phones = {str(v["ID"]): str(v.get("Teléfono", "")) for v in vendedores}
+
+        lider   = ranking[0]
+        n_total = len(ranking)
+
+        for r in ranking:
+            vid    = r["ID_Vendedor"]
+            nombre = r["Nombre"]
+            pos    = r["Posición"]
+            total  = r["Total_Semana"]
+            phone  = phones.get(vid)
+
+            if not phone:
+                logger.warning("Ranking semanal: sin teléfono para %s (%s)", nombre, vid)
+                continue
+
+            if pos == 1:
+                msg = (
+                    f"🏆 *¡Felicitaciones, {nombre}!*\n\n"
+                    f"Cerraste la semana del {semana_label} como el/la *mejor vendedor/a* de CUBOCRAFT 🥇\n\n"
+                    f"Vendiste *{_fmt(total)}* — un resultado de primera.\n"
+                    f"¡Seguí así, que el liderazgo se mantiene con constancia!\n\n"
+                    f"— El equipo CUBOCRAFT 💪"
+                )
+            elif pos < n_total:
+                diferencia = round(lider["Total_Semana"] - total, 2)
+                msg = (
+                    f"🥈 *¡Muy bien, {nombre}!*\n\n"
+                    f"Esta semana ({semana_label}) vendiste *{_fmt(total)}* — ¡gran trabajo!\n\n"
+                    f"Estás a solo *{_fmt(diferencia)}* del primer puesto. "
+                    f"Esa distancia se puede acortar la semana que viene. ¡Vos podés!\n\n"
+                    f"— El equipo CUBOCRAFT 💪"
+                )
+            else:
+                # Último lugar → Gemini genera el coaching
+                msg = bot_handler.generar_mensaje_coaching(
+                    nombre=nombre,
+                    total_semana=total,
+                    aperturas_vendedor=r.get("Aperturas", []),
+                    aperturas_lider=lider.get("Aperturas", []),
+                )
+
+            whatsapp_client.enviar(phone, msg)
+            logger.info("Ranking semanal: enviado a %s (pos=%d total=%s)", nombre, pos, total)
+
+    except Exception:
+        logger.exception("Error en _enviar_ranking_semanal")
+
+
 def _procesar_pendientes_job() -> None:
     try:
         n = sheets_client.procesar_pendientes_aprobados()
@@ -72,8 +141,14 @@ _scheduler.add_job(
     id="procesar_pendientes",
     replace_existing=True,
 )
+_scheduler.add_job(
+    _enviar_ranking_semanal,
+    CronTrigger(day_of_week="mon", hour=9, minute=0, timezone=_tz_arg),
+    id="ranking_semanal",
+    replace_existing=True,
+)
 _scheduler.start()
-logger.info("Scheduler iniciado — resumen 20:00 ARG | procesar_pendientes cada 1h")
+logger.info("Scheduler iniciado — resumen 20:00 ARG | procesar_pendientes cada 1h | ranking_semanal lunes 9:00 ARG")
 
 
 @app.after_request

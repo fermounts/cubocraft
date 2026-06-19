@@ -93,6 +93,17 @@ def get_vendedor_by_id(vid: str) -> dict | None:
         return None
 
 
+def get_vendedores_activos() -> list[dict]:
+    """Todos los vendedores con Activa=SI."""
+    try:
+        ws = _get_sheet("VENDEDORES")
+        return [r for r in ws.get_all_records()
+                if str(r.get("Activa", "")).upper() in ("SI", "1", "TRUE")]
+    except Exception as e:
+        logger.error("get_vendedores_activos error: %s", e)
+        return []
+
+
 def validar_login(phone: str, pin: str) -> dict | None:
     """Valida teléfono + PIN contra VENDEDORES. Devuelve dict del vendedor o None."""
     try:
@@ -462,6 +473,58 @@ def _calcular_ranking_total(mes_actual: str, pedidos: list[dict]) -> list[dict]:
         }
         for pos, (vid, info) in enumerate(ranking, start=1)
     ]
+
+
+def calcular_ranking_semanal(inicio: date, fin: date) -> list[dict]:
+    """Ranking combinado (todos los productos) de la semana inicio→fin inclusive."""
+    try:
+        ini_str = inicio.isoformat()
+        fin_str = fin.isoformat()
+
+        pedidos  = _get_sheet("PEDIDOS").get_all_records()
+        prods_map = {
+            str(r.get("ID", "")): str(r.get("Apertura", ""))
+            for r in _get_sheet("PRODUCTOS").get_all_records()
+        }
+
+        totales: dict[str, dict] = {}
+        for p in pedidos:
+            if str(p.get("Estado", "")).upper() == "CANCELADO":
+                continue
+            fecha_str = str(p.get("Fecha", ""))[:10]
+            if not (ini_str <= fecha_str <= fin_str):
+                continue
+            vid      = str(p.get("ID_Vendedor", ""))
+            nombre   = str(p.get("Nombre_Vendedor", ""))
+            total    = _safe_float(p.get("Total", 0))
+            apertura = prods_map.get(str(p.get("ID_Producto", "")), "")
+            if vid not in totales:
+                totales[vid] = {"nombre": nombre, "total": 0.0, "pedidos": 0, "aperturas": []}
+            totales[vid]["total"]   += total
+            totales[vid]["pedidos"] += 1
+            if apertura and apertura not in totales[vid]["aperturas"]:
+                totales[vid]["aperturas"].append(apertura)
+
+        if not totales:
+            return []
+
+        cats    = ["Oro", "Plata", "Bronce"]
+        ranking = sorted(totales.items(), key=lambda x: x[1]["total"], reverse=True)
+        return [
+            {
+                "ID_Vendedor":  vid,
+                "Nombre":       info["nombre"],
+                "Total_Semana": round(info["total"], 2),
+                "Pedidos":      info["pedidos"],
+                "Posición":     pos,
+                "Categoría":    cats[pos - 1] if pos <= 3 else "—",
+                "Aperturas":    info["aperturas"],
+            }
+            for pos, (vid, info) in enumerate(ranking, start=1)
+        ]
+    except Exception as e:
+        logger.error("calcular_ranking_semanal %s→%s error: %s", inicio, fin, e)
+        return []
 
 
 def get_dashboard_supervisor() -> dict:

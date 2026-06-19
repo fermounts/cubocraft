@@ -87,6 +87,54 @@ def _configure_gemini() -> None:
         _gemini_configured = True
 
 
+def generar_mensaje_coaching(
+    nombre: str,
+    total_semana: float,
+    aperturas_vendedor: list[str],
+    aperturas_lider: list[str],
+) -> str:
+    """Mensaje de coaching con Gemini para el último puesto del ranking semanal."""
+    cats_lider   = ", ".join(aperturas_lider)   if aperturas_lider   else "diversas categorías"
+    cats_propias = ", ".join(aperturas_vendedor) if aperturas_vendedor else "sus categorías habituales"
+    prompt = (
+        f"Sos coach de ventas de CUBOCRAFT, empresa de EPP y materiales de construcción en Argentina.\n"
+        f"Un vendedor llamado {nombre} cerró la semana con ${total_semana:,.2f} en ventas, "
+        f"trabajando principalmente: {cats_propias}.\n"
+        f"Las categorías más vendidas por el equipo esta semana fueron: {cats_lider}.\n\n"
+        f"Escribí un mensaje de WhatsApp para {nombre} que:\n"
+        f"- Reconozca su esfuerzo de la semana\n"
+        f"- Sugiera explorar las categorías {cats_lider} sin aclarar que las lidera otro vendedor\n"
+        f"- Tono de coach positivo, NO de regaño\n"
+        f"- 3 párrafos máximo, lenguaje argentino natural\n"
+        f"- Incluí algún emoji adecuado\n"
+        f"- No menciones a ningún otro vendedor ni comparaciones\n"
+        f"Solo devolvé el mensaje, sin explicaciones previas."
+    )
+    try:
+        _configure_gemini()
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            system_instruction="Sos coach de ventas en Argentina. Respondés solo con el mensaje solicitado.",
+        )
+        resp = model.generate_content(
+            prompt,
+            # gemini-2.5-flash usa tokens de thinking antes de responder;
+            # max_output_tokens bajo los agota antes de producir texto real.
+            generation_config=genai.GenerationConfig(max_output_tokens=8192),
+        )
+        # Concatenar todas las partes para no perder texto por streaming parcial
+        text = "".join(p.text for p in resp.candidates[0].content.parts if hasattr(p, "text"))
+        return text.strip() if text.strip() else resp.text.strip()
+    except Exception as e:
+        logger.error("generar_mensaje_coaching error: %s", e)
+        return (
+            f"💪 *¡Seguí adelante, {nombre}!*\n\n"
+            f"Esta semana lograste ${total_semana:,.2f} en ventas — ¡cada pedido cuenta!\n\n"
+            f"La próxima semana es una nueva oportunidad para explorar nuevas categorías y crecer. "
+            f"El equipo confía en vos.\n\n— El equipo CUBOCRAFT"
+        )
+
+
 # ── Renders reutilizables ─────────────────────────────────────────────────────
 
 def _selector_empresa(nombre: str) -> str:
