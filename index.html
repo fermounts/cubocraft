@@ -89,6 +89,24 @@
 
     .nav-link:hover { color: var(--navy); background: #F1F5F9; }
 
+    .nav-link-dash {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--navy);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: 0.3rem;
+      border: 1.5px solid var(--border);
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+
+    .nav-link-dash:hover {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #fff;
+    }
+
     .hamburger {
       display: none;
       flex-direction: column;
@@ -830,6 +848,7 @@
         <li><a class="nav-link" href="#cubo">CUBO</a></li>
         <li><a class="nav-link" href="#craft">CRAFT</a></li>
         <li><a class="nav-link" href="#contacto">Contacto</a></li>
+        <li><a class="nav-link-dash" href="/dashboard">Acceso Supervisor/Vendedor</a></li>
       </ul>
     </nav>
     <button class="hamburger" id="hamburger" aria-label="Abrir men&uacute;" aria-expanded="false">
@@ -842,6 +861,7 @@
     <a class="nav-link" href="#cubo"     onclick="closeMobileNav()">CUBO</a>
     <a class="nav-link" href="#craft"    onclick="closeMobileNav()">CRAFT</a>
     <a class="nav-link" href="#contacto" onclick="closeMobileNav()">Contacto</a>
+    <a class="nav-link" href="/dashboard" style="color:var(--navy);font-weight:700">Acceso Supervisor/Vendedor</a>
   </nav>
 </header>
 
