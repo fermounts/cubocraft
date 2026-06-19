@@ -1,5 +1,5 @@
 # CONTEXTO PROYECTO CUBOCRAFT
-Última actualización: 2026-06-18
+Última actualización: 2026-06-19
 
 ## DATOS GENERALES
 - Carpeta local: `/home/fernan/cubocraft/`
@@ -41,7 +41,7 @@ CONOCIMIENTO_TECNICO, FICHAS_TECNICAS_BORRADOR, BASE_CONOCIMIENTO, PENDIENTES_VA
 ### Hojas con datos reales
 - **VENDEDORES** — 3 registros. Columnas: ID, Nombre, Teléfono, Zona, Perfil, Activa, **Empresa** (AMBAS para los 3), **PIN** (V001=1111, V002=2222, V003=3333 por defecto)
 - **PRODUCTOS** — 80 productos (40 EPP + 40 Materiales de Construcción)
-- **PEDIDOS** — 11 pedidos: 3 de Fernando (reales), 4 de Fernanda y 4 de Tomás (prueba, corregidos 2026-06-16)
+- **PEDIDOS** — 12 pedidos: 3 de Fernando (reales), 4 de Fernanda y 4 de Tomás (prueba), 1 de Fernanda CANCELADO (P20260619031234 — ver abajo)
 - **CONOCIMIENTO_TECNICO** — 11 normativas completas
 - **BASE_CONOCIMIENTO** — 36 fichas técnicas generadas (44 pendientes por límite Gemini)
 - **RANKING** — calculado con datos reales de junio 2026 (actualizado 2026-06-16)
@@ -172,6 +172,8 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - Pipeline validación: PENDIENTES_VALIDACION → BASE_CONOCIMIENTO (job horario)
 - Resumen diario al supervisor a las 20hs Argentina
 - Job semanal de ranking: lunes 9:00hs ARG, mensajes automáticos por posición (2026-06-19)
+- Control de crédito $100.000: rechaza pedidos que superen el disponible antes de grabar en Sheet (2026-06-19)
+- Notificación al supervisor incluye monto por ítem y total general del pedido (2026-06-19)
 - Cancelación de pedidos y anulación de pagos operativos (2026-06-06)
 - Pagos con confirmación del supervisor (2026-06-15): graba PENDIENTE, supervisor confirma desde panel 9→B
 - Mensajes "join [keyword]" del sandbox de Twilio ignorados silenciosamente (2026-06-16)
@@ -190,6 +192,46 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - Documento actual: CUBOCRAFT_TFI_v5.docx (en carpeta Proyecto Integrador de Drive)
 - Correcciones de tutora aplicadas en v5: context stuffing en lugar de RAG
 - Pendiente: agregar datos reales de pruebas en secciones 4.2 y 4.5
+
+## CAMBIOS EN CÓDIGO (2026-06-19) — Control de crédito y notificación con totales
+
+### bot_handler.py — Fix 1: tope de crédito antes de grabar
+
+En `_handle_pedido_cantidad()`, inmediatamente después de calcular `total_item` y
+antes de hacer `session_store.set(..., PEDIDO_CONFIRMAR)`:
+
+- Llama a `sheets_client.get_balance_vendedor(vendedor)` para obtener `disponible`.
+- Suma el carrito actual (`total_carrito`) + el ítem nuevo (`total_item`).
+- Si supera `disponible`: rechaza con mensaje que indica cuántas unidades máximas puede
+  pedir y sugiere hacer un depósito (opción 2). **No graba nada en el Sheet.**
+- El estado permanece en `PEDIDO_CANTIDAD` para que el vendedor reintente con menos.
+
+`LIMITE_CREDITO = 100_000` hardcodeado en `config.py`. La fórmula de disponible:
+```
+disponible = LIMITE_CREDITO - (deuda_real - pagos_pendientes)
+```
+donde `deuda_real` = suma de PEDIDOS PENDIENTE del vendedor, `pagos_pendientes` =
+suma de PAGOS PENDIENTE (crédito provisional mientras el supervisor confirma).
+
+### bot_handler.py — Fix 2: monto total en notificación y confirmación
+
+En `_cerrar_pedido()`:
+- Antes de registrar en el Sheet, calcula `precio_u × qty × (1 − disc/100)` por ítem.
+- Acumula `total_general`.
+- La notificación al supervisor ahora incluye precio por línea + `*TOTAL: $xxx*`.
+- La confirmación al vendedor también muestra el total del pedido.
+
+### Corrección de datos — Pedido fantasma de Fernanda
+
+Pedido `P20260619031234` (Fernanda, 100 × Pantalla Facial Steelpro FP200, $612,000,
+Estado PENDIENTE) fue registrado antes de implementar el control de crédito.
+Cancelado manualmente con `sheets_client.cancelar_pedido("P20260619031234", "V002")`.
+
+Balance de Fernanda antes/después:
+- **Antes**: deuda $757,252.50 / disponible −$657,252.50
+- **Después**: deuda $145,252.50 / disponible −$45,252.50
+
+---
 
 ## CAMBIOS EN CÓDIGO (2026-06-19) — Job semanal de ranking
 
@@ -310,16 +352,18 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 ## PENDIENTES DEL PROYECTO
 1. ⚠️ **Agregar `SECRET_KEY` en Render** (variables de entorno) para seguridad del dashboard
 2. Completar BASE_CONOCIMIENTO (en progreso — `python3 completar_sheet.py --solo-fichas`)
-2. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
-3. Probar flujo completo pedido punta a punta
-4. Probar flujo pago → supervisor confirma → vendedor notificado
-5. ~~Fix ranking en el bot~~ — **RESUELTO 2026-06-18**
-6. Sin tabla CLIENTES — no hay registro de a quién vende el vendedor
-7. Descuento de campaña se evalúa por item, no por total del carrito (bug de lógica)
-8. Fotos reales carrusel CRAFT
-9. Imagen corporativa hub central
-10. Migrar WhatsApp de Twilio a API oficial Meta (futuro)
-11. Agregar datos reales en TFI secciones 4.2 y 4.5
+3. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
+4. Probar flujo completo pedido punta a punta (incluye que el tope de crédito rechace correctamente)
+5. Probar flujo pago → supervisor confirma → vendedor notificado
+6. ~~Fix ranking en el bot~~ — **RESUELTO 2026-06-18**
+7. ~~Control de crédito~~ — **RESUELTO 2026-06-19** (rechaza antes de grabar, sugiere depósito)
+8. Sin tabla CLIENTES — no hay registro de a quién vende el vendedor
+9. Descuento de campaña se evalúa por item, no por total del carrito (bug de lógica)
+10. Fotos reales carrusel CRAFT
+11. Imagen corporativa hub central
+12. Migrar WhatsApp de Twilio a API oficial Meta (futuro)
+13. Agregar datos reales en TFI secciones 4.2 y 4.5
+14. Hacer configurable el límite de crédito por vendedor (hoy es $100.000 global en config.py)
 
 ## PROBLEMAS CONOCIDOS — sin corregir aún
 - ~~**Ranking en el bot**~~: resuelto 2026-06-18.
@@ -327,7 +371,7 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - **Baja**: solicitud no toca VENDEDORES, no desactiva al vendedor.
 - **Panel supervisor**: sin flujo para validar consultas IA desde el bot.
 - **Sin CLIENTES**: pedidos no registran el cliente final.
-- **Límite de crédito**: $100,000 hardcodeado, no por vendedor.
+- **Límite de crédito**: $100,000 hardcodeado en `config.py` (no por vendedor). El control ya se aplica — lo que falta es hacerlo configurable por vendedor.
 
 ## CÓMO USAR ESTE ARCHIVO
 Al inicio de cada sesión decile a Claude Code:
