@@ -171,6 +171,7 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - IA con context stuffing: inyecta BASE_CONOCIMIENTO + CONOCIMIENTO_TECNICO completo
 - Pipeline validación: PENDIENTES_VALIDACION → BASE_CONOCIMIENTO (job horario)
 - Resumen diario al supervisor a las 20hs Argentina
+- Job semanal de ranking: lunes 9:00hs ARG, mensajes automáticos por posición (2026-06-19)
 - Cancelación de pedidos y anulación de pagos operativos (2026-06-06)
 - Pagos con confirmación del supervisor (2026-06-15): graba PENDIENTE, supervisor confirma desde panel 9→B
 - Mensajes "join [keyword]" del sandbox de Twilio ignorados silenciosamente (2026-06-16)
@@ -189,6 +190,37 @@ supervisor: panel 9 → B → C1/R1 → SI → CONFIRMADO/ANULADO → vendedor n
 - Documento actual: CUBOCRAFT_TFI_v5.docx (en carpeta Proyecto Integrador de Drive)
 - Correcciones de tutora aplicadas en v5: context stuffing en lugar de RAG
 - Pendiente: agregar datos reales de pruebas en secciones 4.2 y 4.5
+
+## CAMBIOS EN CÓDIGO (2026-06-19) — Job semanal de ranking
+
+### sheets_client.py
+- `get_vendedores_activos()`: retorna lista de vendedores con Activa=SI.
+- `calcular_ranking_semanal(inicio, fin)`: ranking combinado de todos los productos
+  en el rango de fechas dado; incluye campo `Aperturas` con categorías vendidas.
+
+### bot_handler.py
+- `generar_mensaje_coaching(nombre, total_semana, aperturas_vendedor, aperturas_lider)`:
+  genera mensaje de coaching con Gemini 2.5 Flash para el último puesto del ranking.
+  Sugiere categorías que no trabajó el vendedor (las del líder) sin mencionar al líder.
+  Usa `max_output_tokens=8192` — gemini-2.5-flash es un modelo de "thinking" que consume
+  tokens internamente; con budget bajo el output real quedaba truncado.
+  Tiene fallback con mensaje hardcoded si Gemini falla.
+
+### webhook_server.py
+- `_enviar_ranking_semanal()`: calcula semana anterior (lunes→domingo), genera y
+  envía un mensaje personalizado a cada vendedor en el ranking:
+  - #1: felicitación ("mejor vendedor/a")
+  - #2..penúltimo: motivación (muestra diferencia al líder en $)
+  - Último: coaching generado por Gemini (sugiere categorías sin nombrar al líder)
+- Scheduler: job `ranking_semanal` → `CronTrigger(day_of_week="mon", hour=9, minute=0)`
+- Si no hay ventas en la semana, no envía mensajes y loguea el motivo.
+
+### Scheduler completo
+| Job                  | Trigger                        |
+|----------------------|-------------------------------|
+| resumen_diario       | Lunes-Domingo 20:00 ARG        |
+| procesar_pendientes  | Cada 1 hora                    |
+| ranking_semanal      | Lunes 09:00 ARG                |
 
 ## CAMBIOS EN CÓDIGO (2026-06-18) — Dashboard
 
