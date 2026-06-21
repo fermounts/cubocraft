@@ -1,5 +1,5 @@
 # CONTEXTO PROYECTO CUBOCRAFT
-Última actualización: 2026-06-21 (sesión noche)
+Última actualización: 2026-06-21 (sesión noche — segunda parte)
 
 ## DATOS GENERALES
 - Carpeta local: `/home/fernan/cubocraft/`
@@ -43,7 +43,7 @@ CONOCIMIENTO_TECNICO, FICHAS_TECNICAS_BORRADOR, BASE_CONOCIMIENTO, PENDIENTES_VA
 - **PRODUCTOS** — 80 productos (40 EPP + 40 Materiales de Construcción)
 - **PEDIDOS** — 12 pedidos: 3 de Fernando (reales), 4 de Fernanda y 4 de Tomás (prueba), 1 de Fernanda CANCELADO (P20260619031234 — ver abajo)
 - **CONOCIMIENTO_TECNICO** — 11 normativas completas
-- **BASE_CONOCIMIENTO** — 72 fichas generadas; 14 Aprobadas (4 calzado + 5 cascos + 5 guantes), resto Borrador; 7 pendientes + 1 error
+- **BASE_CONOCIMIENTO** — 72 fichas generadas; 19 Aprobadas (4 calzado + 5 cascos + 5 guantes + 5 protección ocular), resto Borrador; 7 pendientes + 1 error
 - **RANKING** — calculado con datos reales de junio 2026 (actualizado 2026-06-16)
 
 ### Hojas completadas 2026-06-06
@@ -63,7 +63,7 @@ por prefijo de producto (EPP→CUBO, MC→CRAFT). Marca "← vos" al vendedor ac
 
 ### BASE_CONOCIMIENTO — EN PROCESO (72/80 al 2026-06-21)
 - 72/80 fichas generadas; se corta por límite diario de Gemini (20 req/día free tier)
-- **14 Aprobadas**: 4 calzado (EPP-010/011/012/013) + 5 cascos (EPP-001/002/CAB-03/04/05) + 5 guantes (EPP-006/007/008/009/MAN-05)
+- **19 Aprobadas**: 4 calzado + 5 cascos + 5 guantes + 5 protección ocular (ver tabla abajo)
 - **7 pendientes:** MC-AIS-04, EPP-AUD-05, EPP-CAL-05, EPP-ALT-05, EPP-RES-04, EPP-RES-05, EPP-CUE-04
 - **1 error persistente:** EPP-CUE-05 (Impermeable PVC Ombu Naranja)
 - Para retomar: `python3 completar_sheet.py --solo-fichas`
@@ -452,7 +452,7 @@ Criterio de asignación de normas (verificado):
 - Ubicado en `/home/fernan/cubocraft/regenerar_guantes.py`.
 - No se commitea al repo (herramienta de mantenimiento temporal).
 
-### Estado validado de 3 categorías EPP (al 2026-06-21)
+### Estado validado de 3 categorías EPP (al 2026-06-21 noche — primera parte)
 | Categoría | IDs | Norma | Estado |
 |---|---|---|---|
 | Calzado | EPP-010/011/012/013 | IRAM 3610 | ✅ Aprobado |
@@ -464,6 +464,46 @@ Criterio de asignación de normas (verificado):
 - Bloqueó todas las pruebas en vivo de la sesión (notificaciones al supervisor, coaching de ranking).
 - Workaround: esperar reset nocturno o usar número Twilio con plan pago.
 - Solución definitiva pendiente: migrar a API oficial WhatsApp Business (Meta).
+
+## CAMBIOS EN CÓDIGO (2026-06-21 noche) — Protección ocular: norma incorrecta detectada y corregida
+
+### Hallazgo: IRAM-3635 no existe
+- `IRAM-3635` figuraba como norma en los 5 productos de la categoría Visual (EPP-003/004/005/VIS-04/VIS-05)
+  en la columna `ID_Norma_Ref` de PRODUCTOS y en las fichas de BASE_CONOCIMIENTO.
+- Verificado por el usuario con fuentes oficiales (Cámara Argentina de Seguridad, SRT, IRAM):
+  **IRAM-3635 no existe como norma**.
+- La norma correcta es **IRAM 3630** — Protectores oculares y faciales de uso ocupacional,
+  con subdivisiones según el tipo de protector.
+
+### Corrección en PRODUCTOS (ID_Norma_Ref — 5 filas)
+| ID | Producto | Norma incorrecta | Norma correcta |
+|---|---|---|---|
+| EPP-003 | Antiparras de Seguridad Clear | IRAM-3635 | IRAM-3630-1 |
+| EPP-004 | Antiparras de Seguridad Grises (solar) | IRAM-3635 | IRAM-3630-10 |
+| EPP-005 | Lentes Panorámicas con Ventilación | IRAM-3635 | IRAM-3630-1 |
+| EPP-VIS-04 | Pantalla Facial Steelpro FP200 (cabezal) | IRAM-3635 | IRAM-3630-7 |
+| EPP-VIS-05 | Antiparras 3M GoggleGear 500 Antivaho | IRAM-3635 | IRAM-3630-1 |
+
+Criterio de asignación de subdivisiones IRAM 3630 (verificado):
+- **IRAM 3630-1** — Protectores oculares, requisitos generales (antiparras, lentes panorámicas)
+- **IRAM 3630-7** — Protectores faciales (pantallas faciales tipo FP200)
+- **IRAM 3630-10** — Filtros de protección contra radiación solar (filtro solar CAT 3, UV400)
+
+### Fichas regeneradas en BASE_CONOCIMIENTO con ESTADO=Aprobado
+- **EPP-003/005/VIS-05**: NORMATIVA = `IRAM 3630-1 — requisitos generales, ventilación indirecta, resistencia impactos`
+- **EPP-004**: NORMATIVA = `IRAM 3630-10 — filtro solar CAT 3 (transmitancia 8–18 %), protección UV400`
+- **EPP-VIS-04**: NORMATIVA = `IRAM 3630-7 — protectores faciales, resistencia impacto Nivel F, apto amolado`
+- Todas con ESTADO=Aprobado. Script: `regenerar_visual.py`.
+
+### Estado validado de 4 categorías EPP (al 2026-06-21)
+| Categoría | IDs | Norma IRAM | Estado |
+|---|---|---|---|
+| Calzado | EPP-010/011/012/013 | 3610 | ✅ Aprobado |
+| Cascos | EPP-001/002/CAB-03/04/05 | 3620 (Clase B dieléctrico / Clase C resto) | ✅ Aprobado |
+| Guantes | EPP-006/007/008/009/MAN-05 | 3600-1 / 3607 / 3609-1 según material | ✅ Aprobado |
+| Protección ocular | EPP-003/004/005/VIS-04/VIS-05 | 3630-1 / 3630-7 / 3630-10 según tipo | ✅ Aprobado |
+
+**Total fichas aprobadas: 19** (de 72 generadas / 80 totales)
 
 ## CAMBIOS EN CÓDIGO (2026-06-21) — Fix zona horaria
 
@@ -483,7 +523,8 @@ Criterio de asignación de normas (verificado):
    - Pendientes: MC-AIS-04, EPP-AUD-05, EPP-CAL-05, EPP-ALT-05, EPP-RES-04, EPP-RES-05, EPP-CUE-04
    - Comando: `GEMINI_API_KEY="..." python3 completar_sheet.py --solo-fichas`
 3. ~~Regenerar fichas de guantes~~ — **RESUELTO 2026-06-21** (EPP-006/007/008/009/MAN-05 Aprobadas, normas verificadas)
-4b. Aprobar/regenerar las ~58 fichas restantes en ESTADO=Borrador (revisar normas inventadas)
+3b. ~~Regenerar fichas de protección ocular~~ — **RESUELTO 2026-06-21** (EPP-003/004/005/VIS-04/VIS-05 Aprobadas, IRAM 3630)
+4b. Aprobar/regenerar las ~53 fichas restantes en ESTADO=Borrador (revisar normas inventadas)
 4. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
 5. Probar flujo completo pedido punta a punta (incluye que el tope de crédito rechace correctamente)
 6. Probar flujo pago → supervisor confirma → vendedor notificado
@@ -509,10 +550,14 @@ Criterio de asignación de normas (verificado):
 - **Límite de crédito**: $100.000 hardcodeado en `config.py` (no por vendedor). El control ya se aplica.
 - **Twilio Sandbox**: límite diario de mensajes salientes bloquea pruebas en vivo.
   Workaround temporal: esperar reset o usar número Twilio con plan pago. Solución definitiva: Meta API.
-- **Fichas en Borrador**: ~58 fichas generadas con prompt viejo pueden tener normas inventadas.
-  14 ya Aprobadas (4 calzado + 5 cascos + 5 guantes). Revisar y aprobar el resto manualmente,
-  o regenerar por lotes usando `regenerar_cascos.py` / `regenerar_guantes.py` como modelo.
-- **IRAM-3649**: era la norma incorrecta asignada a los 5 guantes — ya corregida en PRODUCTOS y BASE_CONOCIMIENTO.
+- **Fichas en Borrador**: ~53 fichas generadas con prompt viejo pueden tener normas inventadas.
+  19 ya Aprobadas (4 calzado + 5 cascos + 5 guantes + 5 protección ocular). Revisar el resto manualmente,
+  o regenerar por lotes usando los scripts `regenerar_*.py` como modelo.
+- **Normas no existentes detectadas** (verificadas por el usuario con fuentes oficiales):
+  - `IRAM-3627`: inventada por Gemini para calzado → corregida a `IRAM 3610`
+  - `IRAM-3649`: norma de respiratoria asignada erróneamente a guantes → corregida (3600-1/3607/3609-1)
+  - `IRAM-3635`: no existe → corregida a `IRAM 3630` con subdivisiones para protección ocular
+- **Regla**: nunca asumir que una norma que "ya estaba en el Sheet" es correcta sin verificación del usuario.
 
 ## CÓMO USAR ESTE ARCHIVO
 Al inicio de cada sesión decile a Claude Code:
