@@ -1,5 +1,5 @@
 # CONTEXTO PROYECTO CUBOCRAFT
-Última actualización: 2026-06-19
+Última actualización: 2026-06-21
 
 ## DATOS GENERALES
 - Carpeta local: `/home/fernan/cubocraft/`
@@ -43,7 +43,7 @@ CONOCIMIENTO_TECNICO, FICHAS_TECNICAS_BORRADOR, BASE_CONOCIMIENTO, PENDIENTES_VA
 - **PRODUCTOS** — 80 productos (40 EPP + 40 Materiales de Construcción)
 - **PEDIDOS** — 12 pedidos: 3 de Fernando (reales), 4 de Fernanda y 4 de Tomás (prueba), 1 de Fernanda CANCELADO (P20260619031234 — ver abajo)
 - **CONOCIMIENTO_TECNICO** — 11 normativas completas
-- **BASE_CONOCIMIENTO** — 36 fichas técnicas generadas (44 pendientes por límite Gemini)
+- **BASE_CONOCIMIENTO** — 72 fichas técnicas generadas (7 pendientes + 1 error persistente)
 - **RANKING** — calculado con datos reales de junio 2026 (actualizado 2026-06-16)
 
 ### Hojas completadas 2026-06-06
@@ -61,8 +61,10 @@ CONOCIMIENTO_TECNICO, FICHAS_TECNICAS_BORRADOR, BASE_CONOCIMIENTO, PENDIENTES_VA
 El bot muestra el ranking correcto: opción 5 calcula en tiempo real desde PEDIDOS filtrando
 por prefijo de producto (EPP→CUBO, MC→CRAFT). Marca "← vos" al vendedor actual.
 
-### BASE_CONOCIMIENTO — EN PROCESO
-- 36/80 fichas generadas; se corta por límite diario de Gemini (20 req/día free tier)
+### BASE_CONOCIMIENTO — EN PROCESO (72/80 al 2026-06-21)
+- 72/80 fichas generadas; se corta por límite diario de Gemini (20 req/día free tier)
+- **7 pendientes:** MC-AIS-04, EPP-AUD-05, EPP-CAL-05, EPP-ALT-05, EPP-RES-04, EPP-RES-05, EPP-CUE-04
+- **1 error persistente:** EPP-CUE-05 (Impermeable PVC Ombu Naranja)
 - Para retomar: `python3 completar_sheet.py --solo-fichas`
 - Checkpoint en: `completar_sheet_progress.json`
 - Delay entre requests: 65 segundos; 90 extra si hay rate limit 429
@@ -349,14 +351,27 @@ Balance de Fernanda antes/después:
 - Reemplazó los datos estáticos de prueba por el ranking calculado de los 11 pedidos de junio.
 - Calculado con script directo al Sheet (no hay job automático aún).
 
+## CAMBIOS EN CÓDIGO (2026-06-21) — Fix zona horaria
+
+### sheets_client.py y bot_handler.py
+- **Bug:** `datetime.now()` sin TZ devolvía UTC en Render. Un pedido a las 23:32 ARG
+  se grababa como 02:32 del día siguiente en PEDIDOS/PAGOS/BASE_CONOCIMIENTO.
+- **Fix:** agregado `import pytz` y `_TZ_ARG = pytz.timezone("America/Argentina/Buenos_Aires")`
+  en ambos archivos. Todos los `datetime.now()` reemplazados por `datetime.now(_TZ_ARG)`.
+- Afecta: timestamps de PEDIDOS, PAGOS, BASE_CONOCIMIENTO, CANDIDATOS, IDs generados con fecha,
+  y el display del mes en el ranking (opción 5 del bot).
+- `webhook_server.py` usa `date.today()` en el job de las 9:00 ARG (12:00 UTC) — sin riesgo
+  de desfase, no se tocó.
+
 ## PENDIENTES DEL PROYECTO
 1. ⚠️ **Agregar `SECRET_KEY` en Render** (variables de entorno) para seguridad del dashboard
-2. Completar BASE_CONOCIMIENTO (en progreso — `python3 completar_sheet.py --solo-fichas`)
+2. Completar BASE_CONOCIMIENTO — faltan 7 productos + 1 error (`python3 completar_sheet.py --solo-fichas`)
 3. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
 4. Probar flujo completo pedido punta a punta (incluye que el tope de crédito rechace correctamente)
 5. Probar flujo pago → supervisor confirma → vendedor notificado
 6. ~~Fix ranking en el bot~~ — **RESUELTO 2026-06-18**
 7. ~~Control de crédito~~ — **RESUELTO 2026-06-19** (rechaza antes de grabar, sugiere depósito)
+8. ~~Fix zona horaria UTC~~ — **RESUELTO 2026-06-21** (todas las fechas usan ARG)
 8. Sin tabla CLIENTES — no hay registro de a quién vende el vendedor
 9. Descuento de campaña se evalúa por item, no por total del carrito (bug de lógica)
 10. Fotos reales carrusel CRAFT
