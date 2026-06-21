@@ -1,5 +1,5 @@
 # CONTEXTO PROYECTO CUBOCRAFT
-Última actualización: 2026-06-21 (sesión tarde)
+Última actualización: 2026-06-21 (sesión noche)
 
 ## DATOS GENERALES
 - Carpeta local: `/home/fernan/cubocraft/`
@@ -43,7 +43,7 @@ CONOCIMIENTO_TECNICO, FICHAS_TECNICAS_BORRADOR, BASE_CONOCIMIENTO, PENDIENTES_VA
 - **PRODUCTOS** — 80 productos (40 EPP + 40 Materiales de Construcción)
 - **PEDIDOS** — 12 pedidos: 3 de Fernando (reales), 4 de Fernanda y 4 de Tomás (prueba), 1 de Fernanda CANCELADO (P20260619031234 — ver abajo)
 - **CONOCIMIENTO_TECNICO** — 11 normativas completas
-- **BASE_CONOCIMIENTO** — 72 fichas generadas; 9 Aprobadas (4 calzado + 5 cascos), resto Borrador; 7 pendientes + 1 error
+- **BASE_CONOCIMIENTO** — 72 fichas generadas; 14 Aprobadas (4 calzado + 5 cascos + 5 guantes), resto Borrador; 7 pendientes + 1 error
 - **RANKING** — calculado con datos reales de junio 2026 (actualizado 2026-06-16)
 
 ### Hojas completadas 2026-06-06
@@ -63,6 +63,7 @@ por prefijo de producto (EPP→CUBO, MC→CRAFT). Marca "← vos" al vendedor ac
 
 ### BASE_CONOCIMIENTO — EN PROCESO (72/80 al 2026-06-21)
 - 72/80 fichas generadas; se corta por límite diario de Gemini (20 req/día free tier)
+- **14 Aprobadas**: 4 calzado (EPP-010/011/012/013) + 5 cascos (EPP-001/002/CAB-03/04/05) + 5 guantes (EPP-006/007/008/009/MAN-05)
 - **7 pendientes:** MC-AIS-04, EPP-AUD-05, EPP-CAL-05, EPP-ALT-05, EPP-RES-04, EPP-RES-05, EPP-CUE-04
 - **1 error persistente:** EPP-CUE-05 (Impermeable PVC Ombu Naranja)
 - Para retomar: `python3 completar_sheet.py --solo-fichas`
@@ -417,6 +418,53 @@ inventadas para cascos. Se detectó al revisar una respuesta del bot sobre calza
   para revisión manual antes de aprobar. Ubicado en `/home/fernan/cubocraft/regenerar_cascos.py`.
 - No se commitea al repo (es una herramienta de mantenimiento temporal).
 
+## CAMBIOS EN CÓDIGO (2026-06-21 noche) — Guantes: normas corregidas y fichas aprobadas
+
+### Hallazgo: IRAM-3649 mal asignada a todos los guantes en PRODUCTOS
+- `IRAM-3649` es la norma para **equipos de protección respiratoria** (filtros), NO para guantes.
+  Estaba asignada erróneamente a los 5 productos de guantes en la columna `ID_Norma_Ref` de PRODUCTOS.
+- Detectado al revisar las fichas de guantes antes de regenerarlas.
+
+### Corrección en PRODUCTOS (ID_Norma_Ref — 5 filas)
+| ID | Producto | Norma incorrecta | Norma correcta |
+|---|---|---|---|
+| EPP-006 | Guantes de Cuero Vaqueta T8 | IRAM-3649 | IRAM-3600-1 |
+| EPP-007 | Guantes de Cuero Vaqueta T9 | IRAM-3649 | IRAM-3600-1 |
+| EPP-008 | Guantes de Nitrilo Negro T8 (caja x100) | IRAM-3649 | IRAM-3609-1 |
+| EPP-009 | Guantes de Nitrilo Naranja Grip T9 | IRAM-3649 | IRAM-3607 |
+| EPP-MAN-05 | Guante Anticorte Steelpro CUT-5 Nivel F T9 | IRAM-3649 | IRAM-3607 |
+
+Criterio de asignación de normas (verificado):
+- **IRAM 3600-1** — Guantes de cuero y cuero combinado (riesgos mecánicos generales)
+- **IRAM 3607** — Guantes contra riesgos mecánicos (niveles de desempeño abrasión/corte/desgarro/perforación)
+- **IRAM 3609-1** — Guantes contra productos químicos y microorganismos
+
+### Fichas regeneradas en BASE_CONOCIMIENTO con ESTADO=Aprobado
+- **EPP-006/007** (cuero): NORMATIVA = `IRAM 3600-1 — Guantes de protección. Parte 1: cuero vacuno/descarne. Riesgos mecánicos generales. Vida útil: reemplazar ante perforaciones, costuras sueltas o cuero endurecido.`
+- **EPP-008** (nitrilo negro descartable): NORMATIVA = `IRAM 3609-1 — Guantes contra productos químicos y microorganismos. Uso único — no reutilizar. Verificar compatibilidad química antes del uso.`
+- **EPP-009** (nitrilo naranja grip): NORMATIVA = `IRAM 3607 — Guantes contra riesgos mecánicos. Resistencia a corte Nivel B (escala A–F). Recubrimiento nitrilo mejora agarre en húmedo/aceitoso.`
+- **EPP-MAN-05** (anticorte Steelpro CUT-5): NORMATIVA = `IRAM 3607 — Corte Nivel F (máximo). HPPE + fibra de acero inox. Equiv.: EN 388:2016+A1:2018 / ANSI/ISEA 105.`
+- Todas grabadas directamente con ESTADO=Aprobado (normativa verificada por humano, no por Gemini).
+
+### Script regenerar_guantes.py (nuevo archivo)
+- Modela el mismo patrón que `regenerar_cascos.py`: Gemini genera descripción/modo_uso/precauciones,
+  la NORMATIVA se hardcodea con datos verificados (nunca se usa la de Gemini).
+- Ubicado en `/home/fernan/cubocraft/regenerar_guantes.py`.
+- No se commitea al repo (herramienta de mantenimiento temporal).
+
+### Estado validado de 3 categorías EPP (al 2026-06-21)
+| Categoría | IDs | Norma | Estado |
+|---|---|---|---|
+| Calzado | EPP-010/011/012/013 | IRAM 3610 | ✅ Aprobado |
+| Cascos | EPP-001/002/CAB-03/04/05 | IRAM 3620 (Clase B para dieléctrico, Clase C para el resto) | ✅ Aprobado |
+| Guantes | EPP-006/007/008/009/MAN-05 | IRAM 3600-1 / 3607 / 3609-1 según material | ✅ Aprobado |
+
+### Limitación de pruebas: Twilio Sandbox (sigue activa)
+- El sandbox de Twilio tiene límite diario de mensajes salientes que se resetea esta noche.
+- Bloqueó todas las pruebas en vivo de la sesión (notificaciones al supervisor, coaching de ranking).
+- Workaround: esperar reset nocturno o usar número Twilio con plan pago.
+- Solución definitiva pendiente: migrar a API oficial WhatsApp Business (Meta).
+
 ## CAMBIOS EN CÓDIGO (2026-06-21) — Fix zona horaria
 
 ### sheets_client.py y bot_handler.py
@@ -434,7 +482,8 @@ inventadas para cascos. Se detectó al revisar una respuesta del bot sobre calza
 2. Completar BASE_CONOCIMIENTO — faltan 7 fichas + 1 error persistente (EPP-CUE-05)
    - Pendientes: MC-AIS-04, EPP-AUD-05, EPP-CAL-05, EPP-ALT-05, EPP-RES-04, EPP-RES-05, EPP-CUE-04
    - Comando: `GEMINI_API_KEY="..." python3 completar_sheet.py --solo-fichas`
-3. Aprobar/regenerar las 63 fichas restantes en ESTADO=Borrador (revisar normas inventadas)
+3. ~~Regenerar fichas de guantes~~ — **RESUELTO 2026-06-21** (EPP-006/007/008/009/MAN-05 Aprobadas, normas verificadas)
+4b. Aprobar/regenerar las ~58 fichas restantes en ESTADO=Borrador (revisar normas inventadas)
 4. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
 5. Probar flujo completo pedido punta a punta (incluye que el tope de crédito rechace correctamente)
 6. Probar flujo pago → supervisor confirma → vendedor notificado
@@ -460,8 +509,10 @@ inventadas para cascos. Se detectó al revisar una respuesta del bot sobre calza
 - **Límite de crédito**: $100.000 hardcodeado en `config.py` (no por vendedor). El control ya se aplica.
 - **Twilio Sandbox**: límite diario de mensajes salientes bloquea pruebas en vivo.
   Workaround temporal: esperar reset o usar número Twilio con plan pago. Solución definitiva: Meta API.
-- **Fichas en Borrador**: 63 fichas generadas con prompt viejo pueden tener normas inventadas.
-  Revisar y aprobar manualmente, o regenerar por lotes con `regenerar_cascos.py` como modelo.
+- **Fichas en Borrador**: ~58 fichas generadas con prompt viejo pueden tener normas inventadas.
+  14 ya Aprobadas (4 calzado + 5 cascos + 5 guantes). Revisar y aprobar el resto manualmente,
+  o regenerar por lotes usando `regenerar_cascos.py` / `regenerar_guantes.py` como modelo.
+- **IRAM-3649**: era la norma incorrecta asignada a los 5 guantes — ya corregida en PRODUCTOS y BASE_CONOCIMIENTO.
 
 ## CÓMO USAR ESTE ARCHIVO
 Al inicio de cada sesión decile a Claude Code:
