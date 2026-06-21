@@ -5,7 +5,10 @@ import re
 from datetime import date, datetime, timedelta
 
 import gspread
+import pytz
 from google.oauth2.service_account import Credentials
+
+_TZ_ARG = pytz.timezone("America/Argentina/Buenos_Aires")
 
 import config
 
@@ -173,10 +176,10 @@ def registrar_pedido(
         ws = _get_sheet("PEDIDOS")
         precio = float(producto.get("Precio_Vendedor", 0))
         subtotal = round(precio * cantidad * (1 - descuento_pct / 100), 2)
-        pid = f"P{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        pid = f"P{datetime.now(_TZ_ARG).strftime('%Y%m%d%H%M%S')}"
         ws.append_row([
             pid,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            datetime.now(_TZ_ARG).strftime("%Y-%m-%d %H:%M:%S"),
             str(vendedor.get("ID", "")),
             str(vendedor.get("Nombre", "")),
             str(producto.get("ID", "")),
@@ -293,10 +296,10 @@ def registrar_pago(
 ) -> tuple[str, float, float]:
     try:
         ws = _get_sheet("PAGOS")
-        pid = f"PAG{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        pid = f"PAG{datetime.now(_TZ_ARG).strftime('%Y%m%d%H%M%S')}"
         ws.append_row([
             pid,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            datetime.now(_TZ_ARG).strftime("%Y-%m-%d %H:%M:%S"),
             str(vendedor.get("ID", "")),
             str(vendedor.get("Nombre", "")),
             str(monto),
@@ -530,8 +533,8 @@ def calcular_ranking_semanal(inicio: date, fin: date) -> list[dict]:
 def get_dashboard_supervisor() -> dict:
     """Datos para el dashboard del supervisor: resumen mes, año, ranking y campañas."""
     try:
-        mes_actual = datetime.now().strftime("%Y-%m")
-        anio_actual = str(datetime.now().year)
+        mes_actual = datetime.now(_TZ_ARG).strftime("%Y-%m")
+        anio_actual = str(datetime.now(_TZ_ARG).year)
 
         pedidos = _get_sheet("PEDIDOS").get_all_records()
         pagos   = _get_sheet("PAGOS").get_all_records()
@@ -586,8 +589,8 @@ def get_dashboard_supervisor() -> dict:
 def get_dashboard_vendedor(vid: str) -> dict:
     """Datos para el dashboard de un vendedor: mes, año, deuda, posición."""
     try:
-        mes_actual = datetime.now().strftime("%Y-%m")
-        anio_actual = str(datetime.now().year)
+        mes_actual = datetime.now(_TZ_ARG).strftime("%Y-%m")
+        anio_actual = str(datetime.now(_TZ_ARG).year)
 
         pedidos = _get_sheet("PEDIDOS").get_all_records()
 
@@ -630,7 +633,7 @@ def get_dashboard_vendedor(vid: str) -> dict:
 def calcular_ranking_empresa(empresa: str) -> list[dict]:
     """Ranking mensual filtrando pedidos por prefijo de producto (EPP→CUBO, MC→CRAFT)."""
     try:
-        mes_actual = datetime.now().strftime("%Y-%m")
+        mes_actual = datetime.now(_TZ_ARG).strftime("%Y-%m")
         ws = _get_sheet("PEDIDOS")
         pedidos = ws.get_all_records()
 
@@ -694,7 +697,7 @@ def get_candidatas_pendientes() -> list[dict]:
 def pasar_candidata_a_vendedoras(candidata: dict) -> str:
     try:
         ws = _get_sheet("VENDEDORES")
-        nueva_id = f"V{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        nueva_id = f"V{datetime.now(_TZ_ARG).strftime('%Y%m%d%H%M%S')}"
         ws.append_row([
             nueva_id,
             str(candidata.get("Nombre", "")),
@@ -792,10 +795,10 @@ def buscar_en_base_conocimiento(pregunta: str) -> dict | None:
 def registrar_pendiente_validacion(pregunta: str, respuesta: str, fuente: str) -> str:
     try:
         ws = _ensure_sheet("PENDIENTES_VALIDACION", _HEADERS_PENDIENTES)
-        pid = f"PV{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        pid = f"PV{datetime.now(_TZ_ARG).strftime('%Y%m%d%H%M%S')}"
         ws.append_row([
             pid,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            datetime.now(_TZ_ARG).strftime("%Y-%m-%d %H:%M:%S"),
             pregunta,
             respuesta,
             fuente,
@@ -865,7 +868,7 @@ def procesar_pendientes_aprobados() -> int:
             fuente = str(r.get("FUENTE", ""))
             validado_por = str(r.get("VALIDADO_POR", ""))
 
-            nueva_id = f"BC{datetime.now().strftime('%Y%m%d%H%M%S')}{procesados}"
+            nueva_id = f"BC{datetime.now(_TZ_ARG).strftime('%Y%m%d%H%M%S')}{procesados}"
             ws_base.append_row([
                 nueva_id,
                 "",
@@ -873,7 +876,7 @@ def procesar_pendientes_aprobados() -> int:
                 respuesta,
                 fuente,
                 validado_por,
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                datetime.now(_TZ_ARG).strftime("%Y-%m-%d %H:%M:%S"),
             ])
             ws_pend.update_cell(i, col_estado, "Procesada")
             procesados += 1
@@ -901,7 +904,7 @@ def aprobar_pendiente(id_pendiente: str, respuesta_corregida: str, validador: st
             return False
 
         ws_base = _ensure_sheet("BASE_CONOCIMIENTO", _HEADERS_BASE_CONOCIMIENTO)
-        nueva_id = f"BC{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        nueva_id = f"BC{datetime.now(_TZ_ARG).strftime('%Y%m%d%H%M%S')}"
         ws_base.append_row([
             nueva_id,
             "",
@@ -909,7 +912,7 @@ def aprobar_pendiente(id_pendiente: str, respuesta_corregida: str, validador: st
             respuesta_corregida or str(registro.get("RESPUESTA_DADA", "")),
             str(registro.get("FUENTE", "")),
             validador,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            datetime.now(_TZ_ARG).strftime("%Y-%m-%d %H:%M:%S"),
         ])
 
         headers = ws_pend.row_values(1)

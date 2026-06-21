@@ -3,6 +3,9 @@ import os
 from datetime import datetime
 
 import google.generativeai as genai
+import pytz
+
+_TZ_ARG = pytz.timezone("America/Argentina/Buenos_Aires")
 
 import config
 import session_store
@@ -529,7 +532,7 @@ def _ejecutar_accion(
         ranking = sheets_client.calcular_ranking_empresa(empresa)
         if not ranking:
             return f"No hay pedidos de {empresa} registrados este mes aún." + _post_prompt()
-        now = datetime.now()
+        now = datetime.now(_TZ_ARG)
         mes_es = sheets_client._MESES_ES.get(now.month, str(now.month))
         lines = [f"🏆 *Ranking {empresa} — {mes_es} {now.year}*\n"]
         emojis = {1: "🥇", 2: "🥈", 3: "🥉"}
