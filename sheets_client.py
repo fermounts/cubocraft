@@ -834,6 +834,8 @@ def get_base_conocimiento() -> list[dict]:
             if estado == "Borrador":
                 continue
             d = {h: (row[i] if i < len(row) else "") for i, h in enumerate(_HEADERS_BASE_CONOCIMIENTO)}
+            # Col 9 (índice 8) = NORMATIVA para fichas técnicas (fuera de los 7 headers oficiales)
+            d["NORMATIVA"] = row[8].strip() if len(row) > 8 else ""
             result.append(d)
         return result
     except Exception as e:

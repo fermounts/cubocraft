@@ -258,6 +258,7 @@ def _ficha_a_contexto(r: dict) -> str:
     tipo = pregunta                                   # Apertura / categoría
     descripcion = respuesta                           # DESCRIPCION
     modo_uso = str(r.get("FUENTE_ORIGINAL", "")).strip()
+    normativa = str(r.get("NORMATIVA", "")).strip()
 
     partes = []
     if nombre:
@@ -268,6 +269,8 @@ def _ficha_a_contexto(r: dict) -> str:
         partes.append(f"Desc: {descripcion[:250]}")
     if modo_uso:
         partes.append(f"Uso: {modo_uso[:150]}")
+    if normativa and "no especificado" not in normativa.lower():
+        partes.append(f"Normativa: {normativa[:300]}")
     return " | ".join(partes)
 
 
