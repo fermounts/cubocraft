@@ -299,7 +299,7 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
     ) or "Sin normativas cargadas."
 
     linea = (
-        "EPP (IRAM 3620 cascos, IRAM 3627 calzado, IRAM 3649 guantes, SRT 299/11)"
+        "EPP (IRAM 3620 cascos, IRAM 3610 calzado, IRAM 3649 guantes, SRT 299/11)"
         if empresa == "CUBO"
         else "Métodos Constructivos (CIRSOC 201, IRAM 1597)"
     )

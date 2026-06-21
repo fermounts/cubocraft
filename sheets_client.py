@@ -814,11 +814,28 @@ def registrar_pendiente_validacion(pregunta: str, respuesta: str, fuente: str) -
 
 
 def get_base_conocimiento() -> list[dict]:
+    """Devuelve registros de BASE_CONOCIMIENTO excluyendo los de ESTADO=Borrador.
+
+    La hoja tiene 7 headers oficiales pero las fichas técnicas escritas por
+    completar_sheet.py usan hasta 12 columnas; la col 12 (índice 11) es ESTADO.
+    Los registros Q&A del pipeline de validación no tienen col 12 (ESTADO vacío),
+    y se incluyen siempre porque ya pasaron por revisión.
+    """
     try:
         ws = _ensure_sheet("BASE_CONOCIMIENTO", _HEADERS_BASE_CONOCIMIENTO)
-        # expected_headers evita el error por columnas vacías duplicadas cuando
-        # las fichas técnicas (12 cols) se graban en una hoja con 7 headers.
-        return ws.get_all_records(expected_headers=_HEADERS_BASE_CONOCIMIENTO)
+        rows = ws.get_all_values()
+        if not rows:
+            return []
+        result = []
+        for row in rows[1:]:
+            if not any(row):
+                continue
+            estado = row[11].strip() if len(row) > 11 else ""
+            if estado == "Borrador":
+                continue
+            d = {h: (row[i] if i < len(row) else "") for i, h in enumerate(_HEADERS_BASE_CONOCIMIENTO)}
+            result.append(d)
+        return result
     except Exception as e:
         logger.error("get_base_conocimiento error: %s", e)
         return []
