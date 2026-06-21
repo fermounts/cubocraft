@@ -1,5 +1,5 @@
 # CONTEXTO PROYECTO CUBOCRAFT
-Última actualización: 2026-06-21
+Última actualización: 2026-06-21 (sesión tarde)
 
 ## DATOS GENERALES
 - Carpeta local: `/home/fernan/cubocraft/`
@@ -43,7 +43,7 @@ CONOCIMIENTO_TECNICO, FICHAS_TECNICAS_BORRADOR, BASE_CONOCIMIENTO, PENDIENTES_VA
 - **PRODUCTOS** — 80 productos (40 EPP + 40 Materiales de Construcción)
 - **PEDIDOS** — 12 pedidos: 3 de Fernando (reales), 4 de Fernanda y 4 de Tomás (prueba), 1 de Fernanda CANCELADO (P20260619031234 — ver abajo)
 - **CONOCIMIENTO_TECNICO** — 11 normativas completas
-- **BASE_CONOCIMIENTO** — 72 fichas técnicas generadas (7 pendientes + 1 error persistente)
+- **BASE_CONOCIMIENTO** — 72 fichas generadas; 9 Aprobadas (4 calzado + 5 cascos), resto Borrador; 7 pendientes + 1 error
 - **RANKING** — calculado con datos reales de junio 2026 (actualizado 2026-06-16)
 
 ### Hojas completadas 2026-06-06
@@ -351,6 +351,72 @@ Balance de Fernanda antes/después:
 - Reemplazó los datos estáticos de prueba por el ranking calculado de los 11 pedidos de junio.
 - Calculado con script directo al Sheet (no hay job automático aún).
 
+## CAMBIOS EN CÓDIGO (2026-06-21) — Calidad BASE_CONOCIMIENTO y bugs del bot
+
+### Problema raíz: alucinaciones de normas en las fichas técnicas
+Gemini inventó normas que no existen: `IRAM-3627` para calzado (la real es `IRAM 3610`) y normas
+inventadas para cascos. Se detectó al revisar una respuesta del bot sobre calzado para obra húmeda.
+
+### Corrección de normas en el Sheet (BASE_CONOCIMIENTO)
+- **EPP-010/011/012/013** (calzado): campo NORMATIVA col 9 corregido de `IRAM-3627` → `IRAM 3610
+  (Calzado de seguridad, calzado de protección y calzado de trabajo)`. ESTADO → Aprobado.
+- **EPP-001/002/CAB-03/CAB-04/CAB-05** (cascos): regeneradas con prompt corregido y NORMATIVA
+  verificada contra fuentes reales (Cámara Argentina de Seguridad, IRAM, Dilva):
+  - IRAM 3620 — Tipo 1, Clase B (EPP-002 dieléctrico, 20.000 V) / Clase C (resto)
+  - Vida útil 2–5 años, equivalencias EN 397 / ANSI Z89.1. ESTADO → Aprobado.
+
+### Corrección en código (norma hardcodeada)
+- `bot_handler.py` system prompt: `IRAM 3627 calzado` → `IRAM 3610 calzado`
+- `setup_sheets.py`: `IRAM-3627` → `IRAM-3610` en PRODUCTOS y CONOCIMIENTO_TECNICO
+  (para que una futura re-siembra no reintroduzca el error)
+
+### PROMPT_FICHA reescrito (completar_sheet.py)
+- Regla absoluta: "NUNCA inventar números de normas, valores numéricos, voltajes,
+  temperaturas, certificaciones que no estén textualmente en la Especificación_Técnica"
+- Si un dato no figura en la spec → `"No especificado en la ficha técnica del proveedor"`
+- Campo NORMATIVA: copiar textualmente de `{especificacion}`, no de `{norma}` si no
+  aparece también en la especificación
+
+### Filtro ESTADO=Borrador en get_base_conocimiento()
+- Antes: `get_all_records(expected_headers=...)` devolvía todos los registros sin filtrar
+- Ahora: usa `get_all_values()`, lee col 12 (ESTADO), excluye ESTADO=Borrador
+- Registros Q&A del pipeline (sin col 12) se incluyen siempre
+- Efecto: el bot ya no puede responder con datos no validados de fichas en Borrador
+
+### Fix encadenado: NORMATIVA nunca llegaba a Gemini
+- `get_base_conocimiento()` no leía col 9 (NORMATIVA) — ahora agrega clave `NORMATIVA` al dict
+- `_ficha_a_contexto()` no incluía NORMATIVA en la cadena de contexto — ahora la incluye,
+  omitiendo los valores "No especificado…" para no contaminar el contexto
+
+### max_output_tokens 400 → 800 (bot_handler.py)
+- Con 400 tokens Gemini truncaba respuestas con datos cuantitativos (normativas, valores técnicos)
+- Aumentado a 800 para permitir respuestas completas con datos verificables
+
+### Fix bug: opción "6" no reconocida en estado POST_ACCION
+- **Síntoma**: vendedor en POST_ACCION escribe "6" para ir a Consulta IA → bot no lo reconoce
+- **Causa**: `_handle_post_accion()` solo aceptaba "1" (volver al menú) y "2" (hasta pronto);
+  cualquier otro input recibía el prompt `"1️⃣ Volver al menú | 2️⃣ Hasta pronto"` y se descartaba
+- **Fix**: si el input está en `_MENU_MAP` (opciones 1–8), se ejecuta directamente via
+  `_ejecutar_accion()`. Si es "9" y es supervisor, abre el panel. Mejora UX general:
+  desde POST_ACCION se puede saltar a cualquier opción sin pasar por el menú.
+
+### API key de Gemini comprometida y reemplazada
+- La key anterior (`AIza...`) fue detectada como "leaked" por Google (403) tras un push.
+  **Causa probable**: la key estaba en algún archivo pusheado al repo en algún momento anterior.
+- Se generó nueva key desde Google AI Studio y se configuró en Render (Environment) y
+  localmente via `~/.bashrc`. Variable: `GEMINI_API_KEY`.
+- ⚠️ Verificar que `.gitignore` cubra todos los archivos con credenciales antes de cada push.
+
+### Limitación de pruebas: Twilio Sandbox
+- El sandbox de Twilio tiene límite diario de mensajes salientes. Esto bloqueó pruebas en vivo
+  durante la sesión. Afecta notificaciones al supervisor y mensajes de coaching del ranking semanal.
+- Solución definitiva: migrar a API oficial WhatsApp Business (Meta) — pendiente en lista.
+
+### Script regenerar_cascos.py (nuevo archivo)
+- Script one-shot para regenerar fichas de cascos con el prompt corregido y mostrar resultados
+  para revisión manual antes de aprobar. Ubicado en `/home/fernan/cubocraft/regenerar_cascos.py`.
+- No se commitea al repo (es una herramienta de mantenimiento temporal).
+
 ## CAMBIOS EN CÓDIGO (2026-06-21) — Fix zona horaria
 
 ### sheets_client.py y bot_handler.py
@@ -365,28 +431,37 @@ Balance de Fernanda antes/después:
 
 ## PENDIENTES DEL PROYECTO
 1. ⚠️ **Agregar `SECRET_KEY` en Render** (variables de entorno) para seguridad del dashboard
-2. Completar BASE_CONOCIMIENTO — faltan 7 productos + 1 error (`python3 completar_sheet.py --solo-fichas`)
-3. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
-4. Probar flujo completo pedido punta a punta (incluye que el tope de crédito rechace correctamente)
-5. Probar flujo pago → supervisor confirma → vendedor notificado
-6. ~~Fix ranking en el bot~~ — **RESUELTO 2026-06-18**
-7. ~~Control de crédito~~ — **RESUELTO 2026-06-19** (rechaza antes de grabar, sugiere depósito)
-8. ~~Fix zona horaria UTC~~ — **RESUELTO 2026-06-21** (todas las fechas usan ARG)
-8. Sin tabla CLIENTES — no hay registro de a quién vende el vendedor
-9. Descuento de campaña se evalúa por item, no por total del carrito (bug de lógica)
-10. Fotos reales carrusel CRAFT
-11. Imagen corporativa hub central
-12. Migrar WhatsApp de Twilio a API oficial Meta (futuro)
-13. Agregar datos reales en TFI secciones 4.2 y 4.5
-14. Hacer configurable el límite de crédito por vendedor (hoy es $100.000 global en config.py)
+2. Completar BASE_CONOCIMIENTO — faltan 7 fichas + 1 error persistente (EPP-CUE-05)
+   - Pendientes: MC-AIS-04, EPP-AUD-05, EPP-CAL-05, EPP-ALT-05, EPP-RES-04, EPP-RES-05, EPP-CUE-04
+   - Comando: `GEMINI_API_KEY="..." python3 completar_sheet.py --solo-fichas`
+3. Aprobar/regenerar las 63 fichas restantes en ESTADO=Borrador (revisar normas inventadas)
+4. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
+5. Probar flujo completo pedido punta a punta (incluye que el tope de crédito rechace correctamente)
+6. Probar flujo pago → supervisor confirma → vendedor notificado
+7. ~~Fix ranking en el bot~~ — **RESUELTO 2026-06-18**
+8. ~~Control de crédito~~ — **RESUELTO 2026-06-19** (rechaza antes de grabar, sugiere depósito)
+9. ~~Fix zona horaria UTC~~ — **RESUELTO 2026-06-21** (todas las fechas usan ARG)
+10. ~~Fix "6" no reconocido en POST_ACCION~~ — **RESUELTO 2026-06-21**
+11. Sin tabla CLIENTES — no hay registro de a quién vende el vendedor
+12. Descuento de campaña se evalúa por item, no por total del carrito (bug de lógica)
+13. Fotos reales carrusel CRAFT
+14. Imagen corporativa hub central
+15. Migrar WhatsApp de Twilio a API oficial Meta (soluciona límite diario sandbox)
+16. Agregar datos reales en TFI secciones 4.2 y 4.5
+17. Hacer configurable el límite de crédito por vendedor (hoy es $100.000 global en config.py)
 
 ## PROBLEMAS CONOCIDOS — sin corregir aún
 - ~~**Ranking en el bot**~~: resuelto 2026-06-18.
+- ~~**Opción "6" en POST_ACCION**~~: resuelto 2026-06-21.
 - **Descuento**: `aplicar_mejor_descuento()` recibe subtotal de un item, no total del carrito.
 - **Baja**: solicitud no toca VENDEDORES, no desactiva al vendedor.
 - **Panel supervisor**: sin flujo para validar consultas IA desde el bot.
 - **Sin CLIENTES**: pedidos no registran el cliente final.
-- **Límite de crédito**: $100,000 hardcodeado en `config.py` (no por vendedor). El control ya se aplica — lo que falta es hacerlo configurable por vendedor.
+- **Límite de crédito**: $100.000 hardcodeado en `config.py` (no por vendedor). El control ya se aplica.
+- **Twilio Sandbox**: límite diario de mensajes salientes bloquea pruebas en vivo.
+  Workaround temporal: esperar reset o usar número Twilio con plan pago. Solución definitiva: Meta API.
+- **Fichas en Borrador**: 63 fichas generadas con prompt viejo pueden tener normas inventadas.
+  Revisar y aprobar manualmente, o regenerar por lotes con `regenerar_cascos.py` como modelo.
 
 ## CÓMO USAR ESTE ARCHIVO
 Al inicio de cada sesión decile a Claude Code:
