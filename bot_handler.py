@@ -981,6 +981,11 @@ def _handle_post_accion(phone: str, t: str, vendedor: dict, es_supervisor: bool)
     if t == "2":
         session_store.clear(phone)
         return f"¡Hasta pronto, {vendedor.get('Nombre', '')}! 👋"
+    # Opción de menú escrita directamente desde POST_ACCION (ej: "6" para IA)
+    if t in _MENU_MAP:
+        return _ejecutar_accion(phone, _MENU_MAP[t], vendedor, empresa, es_supervisor)
+    if t == "9" and es_supervisor:
+        return _iniciar_super_menu(phone, vendedor)
     return "1️⃣ Volver al menú  |  2️⃣ Hasta pronto 👋"
 
 
