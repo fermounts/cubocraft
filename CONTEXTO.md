@@ -1,5 +1,5 @@
 # CONTEXTO PROYECTO CUBOCRAFT
-Última actualización: 2026-06-21 (sesión noche — segunda parte)
+Última actualización: 2026-06-21 (sesión noche — cierre)
 
 ## DATOS GENERALES
 - Carpeta local: `/home/fernan/cubocraft/`
@@ -43,7 +43,7 @@ CONOCIMIENTO_TECNICO, FICHAS_TECNICAS_BORRADOR, BASE_CONOCIMIENTO, PENDIENTES_VA
 - **PRODUCTOS** — 80 productos (40 EPP + 40 Materiales de Construcción)
 - **PEDIDOS** — 12 pedidos: 3 de Fernando (reales), 4 de Fernanda y 4 de Tomás (prueba), 1 de Fernanda CANCELADO (P20260619031234 — ver abajo)
 - **CONOCIMIENTO_TECNICO** — 11 normativas completas
-- **BASE_CONOCIMIENTO** — 72 fichas generadas; 19 Aprobadas (4 calzado + 5 cascos + 5 guantes + 5 protección ocular), resto Borrador; 7 pendientes + 1 error
+- **BASE_CONOCIMIENTO** — 73 fichas generadas; 28 Aprobadas (EPP: 5 cascos + 4 calzado + 5 guantes + 5 visual + 5 auditiva + 4 altura), resto Borrador; 7 pendientes de generación + 1 error + 2 pendientes de aprobación (EPP-CAL-05, EPP-ALT-05)
 - **RANKING** — calculado con datos reales de junio 2026 (actualizado 2026-06-16)
 
 ### Hojas completadas 2026-06-06
@@ -63,7 +63,9 @@ por prefijo de producto (EPP→CUBO, MC→CRAFT). Marca "← vos" al vendedor ac
 
 ### BASE_CONOCIMIENTO — EN PROCESO (72/80 al 2026-06-21)
 - 72/80 fichas generadas; se corta por límite diario de Gemini (20 req/día free tier)
-- **19 Aprobadas**: 4 calzado + 5 cascos + 5 guantes + 5 protección ocular (ver tabla abajo)
+- **28 Aprobadas EPP**: 5 cascos + 4 calzado + 5 guantes + 5 visual + 5 auditiva + 4 altura (ver tabla)
+- **Pendientes de aprobación**: EPP-CAL-05 (nunca generada), EPP-ALT-05 (rate limit Gemini)
+- **Pendientes de categoría**: Respiratoria (5 productos) y Cuerpo (5 productos) — sin verificación de normas aún
 - **7 pendientes:** MC-AIS-04, EPP-AUD-05, EPP-CAL-05, EPP-ALT-05, EPP-RES-04, EPP-RES-05, EPP-CUE-04
 - **1 error persistente:** EPP-CUE-05 (Impermeable PVC Ombu Naranja)
 - Para retomar: `python3 completar_sheet.py --solo-fichas`
@@ -503,7 +505,67 @@ Criterio de asignación de subdivisiones IRAM 3630 (verificado):
 | Guantes | EPP-006/007/008/009/MAN-05 | 3600-1 / 3607 / 3609-1 según material | ✅ Aprobado |
 | Protección ocular | EPP-003/004/005/VIS-04/VIS-05 | 3630-1 / 3630-7 / 3630-10 según tipo | ✅ Aprobado |
 
-**Total fichas aprobadas: 19** (de 72 generadas / 80 totales)
+**Total fichas aprobadas: 28** (de 73 generadas / 80 totales)
+
+## CAMBIOS (2026-06-21 noche) — Auditiva y Altura: normas corregidas y fichas aprobadas
+
+### Auditiva — IRAM-3659 no verificada, reemplazada por IRAM 4126
+- `IRAM-3659` figuraba en los 5 productos auditivos — norma no verificada con fuentes oficiales.
+- Corregida según tipo de protector:
+
+| ID | Producto | Norma incorrecta | Norma correcta |
+|---|---|---|---|
+| EPP-018 | Tapones Auditivos Espuma 3M 1100 (bolsa x100) | IRAM-3659 | IRAM-4126-2 |
+| EPP-019 | Orejeras de Copa SNR 28 dB | IRAM-3659 | IRAM-4126-1 |
+| EPP-AUD-03 | Tapones 3M 1100 con Cordón (caja x100) | IRAM-3659 | IRAM-4126-2 |
+| EPP-AUD-04 | Orejeras Plegables Steelpro HF SNR 30 dB | IRAM-3659 | IRAM-4126-1 |
+| EPP-AUD-05 | Tapones Delta Plus EKASTU Moldeable (caja x50) | IRAM-3659 | IRAM-4126-2 |
+
+Criterio de subdivisiones IRAM 4126 (verificado por usuario):
+- **IRAM 4126-1** — Orejeras (copas con diadema)
+- **IRAM 4126-2** — Protectores de inserción (tapones)
+- **IRAM 4126-3** — Cobertores para casco (no hay productos de este tipo en el catálogo)
+
+Fichas incluyen: límite legal 85 dB(A) en 8 horas (Decreto 351/79, Anexo V) y fórmula de atenuación efectiva NIOSH: **(SNR − 7) / 2 = dB(A) de reducción real en campo** para cada producto.
+
+### Altura — IRAM-3655 no verificada, reemplazada por IRAM 3622-1 / 3605 / 7516
+- `IRAM-3655` figuraba en los 5 productos de altura — norma no verificada con fuentes oficiales.
+- Corregida según tipo de componente:
+
+| ID | Producto | Norma incorrecta | Norma correcta |
+|---|---|---|---|
+| EPP-014 | Arnés de Cuerpo Completo Clase III | IRAM-3655 | IRAM-3622-1 |
+| EPP-015 | Eslinga con Absorbedor de Energía 1,5m | IRAM-3655 | IRAM-3622-1 |
+| EPP-ALT-03 | Línea de Vida Retráctil MSA Workman 3m | IRAM-3655 | IRAM-3605 |
+| EPP-ALT-04 | Eslinga Doble en Y Petzl ABSORBICA-Y 1.5m | IRAM-3655 | IRAM-3622-1 |
+| EPP-ALT-05 | Cuerda Dinámica Libus Poliamida 11mm×50m | IRAM-3655 | IRAM-7516 |
+
+Criterio de normas IRAM (verificado por usuario):
+- **IRAM 3622-1** — Arneses de cuerpo completo y eslingas con absorbedor (detienen caída)
+- **IRAM 3605** — Líneas de vida retráctiles
+- **IRAM 7516** — Cabos de poliamida 3 cordones multifilamento (norma de material, citada en marco de IRAM 3622-1)
+- **IRAM 3622-2** — Cinturones de posicionamiento / líneas de vida no retráctiles (ningún producto en catálogo)
+- **IRAM 3626** — Mosquetones y dispositivos de anclaje (ningún producto standalone en catálogo)
+
+Fichas incluyen: uso obligatorio a partir de **2 m de altura** sobre el plano más próximo (Decreto 351/79, Anexo V) en los 3 arneses/eslingas; nota de espacio libre inferior para el absorbedor (hasta 1,75 m adicionales al desplegarse).
+
+### EPP-ALT-05 pendiente por rate limit Gemini
+- La ficha de Cuerda Dinámica Libus no pudo generarse — se alcanzó el límite diario de 20 req/día (free tier).
+- PRODUCTOS ya corregido (IRAM-7516). Para completar: `GEMINI_API_KEY="..." python3 regenerar_altura.py`
+
+### Estado de fichas EPP aprobadas al cierre de sesión
+| Categoría | IDs | Norma(s) IRAM | Aprobadas |
+|---|---|---|---|
+| Cabeza | EPP-001/002/CAB-03/04/05 | 3620 | 5/5 |
+| Calzado | EPP-010/011/012/013 | 3610 | 4/5 (falta EPP-CAL-05) |
+| Manos | EPP-006/007/008/009/MAN-05 | 3600-1 / 3607 / 3609-1 | 5/5 |
+| Visual | EPP-003/004/005/VIS-04/05 | 3630-1 / 3630-7 / 3630-10 | 5/5 |
+| Auditiva | EPP-018/019/AUD-03/04/05 | 4126-1 / 4126-2 | 5/5 |
+| Altura | EPP-014/015/ALT-03/04 | 3622-1 / 3605 | 4/5 (falta EPP-ALT-05) |
+| Respiratoria | EPP-016/017/RES-03/04/05 | pendiente verificación | 0/5 |
+| Cuerpo | EPP-020/021/022/CUE-04/05 | pendiente verificación | 0/5 |
+
+**Total EPP aprobadas: 28/40**
 
 ## CAMBIOS EN CÓDIGO (2026-06-21) — Fix zona horaria
 
@@ -523,8 +585,14 @@ Criterio de asignación de subdivisiones IRAM 3630 (verificado):
    - Pendientes: MC-AIS-04, EPP-AUD-05, EPP-CAL-05, EPP-ALT-05, EPP-RES-04, EPP-RES-05, EPP-CUE-04
    - Comando: `GEMINI_API_KEY="..." python3 completar_sheet.py --solo-fichas`
 3. ~~Regenerar fichas de guantes~~ — **RESUELTO 2026-06-21** (EPP-006/007/008/009/MAN-05 Aprobadas, normas verificadas)
-3b. ~~Regenerar fichas de protección ocular~~ — **RESUELTO 2026-06-21** (EPP-003/004/005/VIS-04/VIS-05 Aprobadas, IRAM 3630)
-4b. Aprobar/regenerar las ~53 fichas restantes en ESTADO=Borrador (revisar normas inventadas)
+3b. ~~Regenerar fichas de protección ocular~~ — **RESUELTO 2026-06-21** (EPP-003/004/005/VIS-04/VIS-05, IRAM 3630)
+3c. ~~Regenerar fichas auditiva~~ — **RESUELTO 2026-06-21** (EPP-018/019/AUD-03/04/05, IRAM 4126-1/2)
+3d. ~~Regenerar fichas altura (4/5)~~ — **RESUELTO 2026-06-21** (EPP-014/015/ALT-03/04, IRAM 3622-1/3605)
+3e. Completar EPP-ALT-05 (Cuerda Dinámica Libus) — cortado por rate limit diario Gemini. Comando: `GEMINI_API_KEY="..." python3 regenerar_altura.py`
+3f. Completar EPP-CAL-05 — nunca generada (está en los 7 pendientes de `completar_sheet.py`)
+3g. Regenerar fichas Respiratoria (EPP-016/017/RES-03/04/05) — verificar normas antes
+3h. Regenerar fichas Cuerpo (EPP-020/021/022/CUE-04/05) — verificar normas antes
+4b. Aprobar/regenerar las ~48 fichas restantes en ESTADO=Borrador (MC y EPP categorías cubiertas)
 4. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
 5. Probar flujo completo pedido punta a punta (incluye que el tope de crédito rechace correctamente)
 6. Probar flujo pago → supervisor confirma → vendedor notificado
@@ -550,9 +618,10 @@ Criterio de asignación de subdivisiones IRAM 3630 (verificado):
 - **Límite de crédito**: $100.000 hardcodeado en `config.py` (no por vendedor). El control ya se aplica.
 - **Twilio Sandbox**: límite diario de mensajes salientes bloquea pruebas en vivo.
   Workaround temporal: esperar reset o usar número Twilio con plan pago. Solución definitiva: Meta API.
-- **Fichas en Borrador**: ~53 fichas generadas con prompt viejo pueden tener normas inventadas.
-  19 ya Aprobadas (4 calzado + 5 cascos + 5 guantes + 5 protección ocular). Revisar el resto manualmente,
-  o regenerar por lotes usando los scripts `regenerar_*.py` como modelo.
+- **Fichas en Borrador**: ~48 fichas con normas sin verificar (EPP categorías restantes + toda la sección MC).
+  28 EPP ya Aprobadas. Revisar el resto manualmente o regenerar por lotes con los scripts `regenerar_*.py`.
+- **EPP-ALT-05**: PRODUCTOS corregido (IRAM-7516), ficha pendiente por rate limit diario de Gemini.
+- **EPP-CAL-05**: nunca generada, está en la lista de pendientes de `completar_sheet.py`.
 - **Normas no existentes detectadas** (verificadas por el usuario con fuentes oficiales):
   - `IRAM-3627`: inventada por Gemini para calzado → corregida a `IRAM 3610`
   - `IRAM-3649`: norma de respiratoria asignada erróneamente a guantes → corregida (3600-1/3607/3609-1)
