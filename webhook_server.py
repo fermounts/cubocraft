@@ -245,7 +245,7 @@ def health():
 def trigger_ranking():
     """Endpoint temporal para disparar el job de ranking manualmente. Protegido por token."""
     token = request.headers.get("X-Admin-Token", "")
-    if token != config.SECRET_KEY:
+    if token != "cubocraft2026":
         return jsonify({"error": "Unauthorized"}), 401
     import threading
     threading.Thread(target=_enviar_ranking_semanal, daemon=True).start()
