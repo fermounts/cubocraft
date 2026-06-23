@@ -52,17 +52,21 @@ def _fmt(n: float) -> str:
 
 
 def _enviar_ranking_semanal() -> None:
-    """Job de los lunes 9hs ARG: ranking de la semana cerrada + mensajes por WhatsApp."""
+    """Job de los lunes 9hs ARG: ranking del mes en curso + mensajes por WhatsApp."""
     try:
-        hoy    = date.today()                      # lunes
-        fin    = hoy - timedelta(days=1)           # domingo
-        inicio = hoy - timedelta(days=7)           # lunes anterior
-        semana_label = f"{inicio.day}/{inicio.month} al {fin.day}/{fin.month}"
-        logger.info("Ranking semanal: calculando semana %s → %s", inicio, fin)
+        hoy    = date.today()
+        inicio = date(hoy.year, hoy.month, 1)      # 1° del mes en curso
+        fin    = hoy
+        import calendar
+        mes_label = calendar.month_name[hoy.month]  # "June", pero usamos español abajo
+        MESES_ES = {1:"enero",2:"febrero",3:"marzo",4:"abril",5:"mayo",6:"junio",
+                    7:"julio",8:"agosto",9:"septiembre",10:"octubre",11:"noviembre",12:"diciembre"}
+        periodo_label = f"{MESES_ES[hoy.month]} {hoy.year}"
+        logger.info("Ranking mensual: calculando %s → %s", inicio, fin)
 
         ranking = sheets_client.calcular_ranking_semanal(inicio, fin)
         if not ranking:
-            logger.info("Ranking semanal: sin ventas en la semana — sin mensajes")
+            logger.info("Ranking mensual: sin ventas en %s — sin mensajes", periodo_label)
             return
 
         vendedores = sheets_client.get_vendedores_activos()
@@ -79,13 +83,13 @@ def _enviar_ranking_semanal() -> None:
             phone  = phones.get(vid)
 
             if not phone:
-                logger.warning("Ranking semanal: sin teléfono para %s (%s)", nombre, vid)
+                logger.warning("Ranking mensual: sin teléfono para %s (%s)", nombre, vid)
                 continue
 
             if pos == 1:
                 msg = (
                     f"🏆 *¡Felicitaciones, {nombre}!*\n\n"
-                    f"Cerraste la semana del {semana_label} como el/la *mejor vendedor/a* de CUBOCRAFT 🥇\n\n"
+                    f"Cerraste {periodo_label} como el/la *mejor vendedor/a* de CUBOCRAFT 🥇\n\n"
                     f"Vendiste *{_fmt(total)}* — un resultado de primera.\n"
                     f"¡Seguí así, que el liderazgo se mantiene con constancia!\n\n"
                     f"— El equipo CUBOCRAFT 💪"
@@ -94,9 +98,9 @@ def _enviar_ranking_semanal() -> None:
                 diferencia = round(lider["Total_Semana"] - total, 2)
                 msg = (
                     f"🥈 *¡Muy bien, {nombre}!*\n\n"
-                    f"Esta semana ({semana_label}) vendiste *{_fmt(total)}* — ¡gran trabajo!\n\n"
+                    f"Este mes ({periodo_label}) vendiste *{_fmt(total)}* — ¡gran trabajo!\n\n"
                     f"Estás a solo *{_fmt(diferencia)}* del primer puesto. "
-                    f"Esa distancia se puede acortar la semana que viene. ¡Vos podés!\n\n"
+                    f"Esa distancia se puede acortar antes de que cierre el mes. ¡Vos podés!\n\n"
                     f"— El equipo CUBOCRAFT 💪"
                 )
             else:
@@ -109,7 +113,7 @@ def _enviar_ranking_semanal() -> None:
                 )
 
             whatsapp_client.enviar(phone, msg)
-            logger.info("Ranking semanal: enviado a %s (pos=%d total=%s)", nombre, pos, total)
+            logger.info("Ranking mensual: enviado a %s (pos=%d total=%s)", nombre, pos, total)
 
     except Exception:
         logger.exception("Error en _enviar_ranking_semanal")
