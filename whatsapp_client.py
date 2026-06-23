@@ -57,34 +57,42 @@ def notificar_supervisora(mensaje: str) -> None:
         logger.warning("SUPERVISORA_PHONE not configured — notification skipped")
 
 
-def extraer_texto_imagen(media_url: str, auth=None) -> str:
-    try:
-        import pytesseract
-        from PIL import Image
+def _analizar_comprobante_gemini(media_url: str, auth=None) -> tuple[str, float | None]:
+    """Descarga la imagen y usa Gemini Vision para extraer texto y monto del comprobante."""
+    import re
+    import base64
+    import google.generativeai as genai
 
+    try:
         resp = requests.get(media_url, auth=auth, timeout=15)
         resp.raise_for_status()
-        img = Image.open(io.BytesIO(resp.content))
-        texto = pytesseract.image_to_string(img, lang="spa")
-        logger.info("OCR extracted %d chars", len(texto))
-        return texto.strip()
+        content_type = resp.headers.get("Content-Type", "image/jpeg").split(";")[0].strip()
+        b64 = base64.b64encode(resp.content).decode()
+
+        genai.configure(api_key=config.GEMINI_API_KEY)
+        modelo = genai.GenerativeModel("gemini-2.5-flash")
+        resultado = modelo.generate_content([
+            {
+                "inline_data": {"mime_type": content_type, "data": b64}
+            },
+            (
+                "Analizá esta imagen de comprobante de pago argentino. "
+                "Respondé SOLO con JSON con exactamente estas dos claves: "
+                '{"texto": "<todo el texto visible en la imagen>", "monto": <número o null>}. '
+                "En 'monto' poné el monto total transferido como número sin símbolos (ej: 6000.0). "
+                "Si no podés determinarlo con certeza, poné null."
+            ),
+        ])
+        raw = resultado.text.strip().strip("```json").strip("```").strip()
+        data = __import__("json").loads(raw)
+        texto = data.get("texto", "")
+        monto = float(data["monto"]) if data.get("monto") is not None else None
+        logger.info("Gemini Vision: monto_ocr=%s texto_len=%d", monto, len(texto))
+        return texto, monto
+
     except Exception as e:
-        logger.error("OCR error: %s", e)
-        return ""
-
-
-def _parsear_monto_ocr(texto: str) -> float | None:
-    """Extrae el primer monto monetario del texto OCR. Soporta formato ARG (punto=miles, coma=decimal)."""
-    import re
-    patron = r'\$?\s*(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:,\d{1,2})?)'
-    for m in re.findall(patron, texto):
-        try:
-            valor = float(m.replace(".", "").replace(",", "."))
-            if valor >= 100:  # ignorar números pequeños (fechas, códigos, etc.)
-                return valor
-        except ValueError:
-            continue
-    return None
+        logger.error("Gemini Vision OCR error: %s", e)
+        return "", None
 
 
 def validar_comprobante_imagen(media_url: str) -> tuple[bool, str, float | None]:
@@ -92,10 +100,9 @@ def validar_comprobante_imagen(media_url: str) -> tuple[bool, str, float | None]
     if config.TWILIO_ACCOUNT_SID and config.TWILIO_AUTH_TOKEN:
         auth = (config.TWILIO_ACCOUNT_SID, config.TWILIO_AUTH_TOKEN)
 
-    texto = extraer_texto_imagen(media_url, auth=auth)
+    texto, monto_ocr = _analizar_comprobante_gemini(media_url, auth=auth)
     keywords = ["transferencia", "pago", "comprobante", "monto", "importe", "$", "mp", "mercadopago"]
     encontrados = [kw for kw in keywords if kw in texto.lower()]
     es_valido = len(encontrados) >= 2
-    monto_ocr = _parsear_monto_ocr(texto)
     logger.info("Comprobante validation: valid=%s encontrados=%s monto_ocr=%s", es_valido, encontrados, monto_ocr)
     return es_valido, texto, monto_ocr
