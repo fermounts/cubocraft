@@ -898,11 +898,22 @@ def _handle_pago_comprobante(
     session = session_store.get(phone)
     comprobante = texto or ""
 
+    alerta_monto = ""
     if media_url:
-        es_valido, ocr_texto = whatsapp_client.validar_comprobante_imagen(media_url)
+        es_valido, ocr_texto, monto_ocr = whatsapp_client.validar_comprobante_imagen(media_url)
         comprobante = ocr_texto or media_url
         if not es_valido:
             logger.warning("Posible comprobante inválido de %s", phone)
+        monto_declarado = float(session.get("pago_monto") or 0)
+        if monto_ocr and monto_declarado > 0:
+            diferencia_pct = abs(monto_ocr - monto_declarado) / monto_declarado
+            if diferencia_pct > 0.05:
+                alerta_monto = (
+                    f"⚠️ El monto declarado (${monto_declarado:,.2f}) no coincide con el detectado "
+                    f"en el comprobante (${monto_ocr:,.2f}) — revisar con atención."
+                )
+                logger.warning("Discrepancia de monto: declarado=%.2f ocr=%.2f pct=%.1f%%",
+                               monto_declarado, monto_ocr, diferencia_pct * 100)
 
     monto = float(session.get("pago_monto") or 0)
     metodo = session.get("pago_metodo") or "?"
@@ -910,7 +921,8 @@ def _handle_pago_comprobante(
     session_store.set(phone, PAGO_CONFIRMAR, vendedor=vendedor,
                       pago_monto=monto,
                       pago_metodo=metodo,
-                      pago_comprobante=comprobante)
+                      pago_comprobante=comprobante,
+                      pago_alerta_monto=alerta_monto)
     return (
         "📄 *Confirmar pago:*\n"
         f"Monto: ${monto:.2f}\n"
@@ -927,11 +939,15 @@ def _handle_pago_confirmar(phone: str, t: str, vendedor: dict) -> str:
         comprobante = session.get("pago_comprobante") or ""
         pid, _, _ = sheets_client.registrar_pago(vendedor, monto, metodo, comprobante)
         session_store.set(phone, POST_ACCION, vendedor=vendedor)
-        whatsapp_client.notificar_supervisora(
+        alerta_monto = session.get("pago_alerta_monto", "")
+        notif = (
             f"💰 Pago pendiente de confirmación\n"
             f"Vendedor: {vendedor.get('Nombre','?')} | ${monto:.2f} via {metodo} | ID: {pid}\n"
-            f"Panel supervisor (9) → B para confirmar o rechazar"
         )
+        if alerta_monto:
+            notif += f"\n{alerta_monto}\n"
+        notif += "Panel supervisor (9) → B para confirmar o rechazar"
+        whatsapp_client.notificar_supervisora(notif)
         return (
             f"✅ *Pago enviado para revisión.*\nID: {pid}\nMonto: ${monto:.2f}\n"
             "El supervisor lo confirmará en breve."

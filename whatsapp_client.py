@@ -73,7 +73,21 @@ def extraer_texto_imagen(media_url: str, auth=None) -> str:
         return ""
 
 
-def validar_comprobante_imagen(media_url: str) -> tuple[bool, str]:
+def _parsear_monto_ocr(texto: str) -> float | None:
+    """Extrae el primer monto monetario del texto OCR. Soporta formato ARG (punto=miles, coma=decimal)."""
+    import re
+    patron = r'\$?\s*(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:,\d{1,2})?)'
+    for m in re.findall(patron, texto):
+        try:
+            valor = float(m.replace(".", "").replace(",", "."))
+            if valor >= 100:  # ignorar números pequeños (fechas, códigos, etc.)
+                return valor
+        except ValueError:
+            continue
+    return None
+
+
+def validar_comprobante_imagen(media_url: str) -> tuple[bool, str, float | None]:
     auth = None
     if config.TWILIO_ACCOUNT_SID and config.TWILIO_AUTH_TOKEN:
         auth = (config.TWILIO_ACCOUNT_SID, config.TWILIO_AUTH_TOKEN)
@@ -82,5 +96,6 @@ def validar_comprobante_imagen(media_url: str) -> tuple[bool, str]:
     keywords = ["transferencia", "pago", "comprobante", "monto", "importe", "$", "mp", "mercadopago"]
     encontrados = [kw for kw in keywords if kw in texto.lower()]
     es_valido = len(encontrados) >= 2
-    logger.info("Comprobante validation: valid=%s encontrados=%s", es_valido, encontrados)
-    return es_valido, texto
+    monto_ocr = _parsear_monto_ocr(texto)
+    logger.info("Comprobante validation: valid=%s encontrados=%s monto_ocr=%s", es_valido, encontrados, monto_ocr)
+    return es_valido, texto, monto_ocr
