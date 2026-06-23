@@ -918,6 +918,7 @@ def _handle_pago_comprobante(
     monto = float(session.get("pago_monto") or 0)
     metodo = session.get("pago_metodo") or "?"
 
+    logger.info("pago_comprobante: alerta_monto=%r antes de guardar en sesión", alerta_monto)
     session_store.set(phone, PAGO_CONFIRMAR, vendedor=vendedor,
                       pago_monto=monto,
                       pago_metodo=metodo,
@@ -937,9 +938,10 @@ def _handle_pago_confirmar(phone: str, t: str, vendedor: dict) -> str:
         monto = float(session.get("pago_monto") or 0)
         metodo = session.get("pago_metodo") or ""
         comprobante = session.get("pago_comprobante") or ""
+        alerta_monto = session.get("pago_alerta_monto", "")
+        logger.info("pago_confirmar: alerta_monto=%r leído de sesión", alerta_monto)
         pid, _, _ = sheets_client.registrar_pago(vendedor, monto, metodo, comprobante)
         session_store.set(phone, POST_ACCION, vendedor=vendedor)
-        alerta_monto = session.get("pago_alerta_monto", "")
         notif = (
             f"💰 Pago pendiente de confirmación\n"
             f"Vendedor: {vendedor.get('Nombre','?')} | ${monto:.2f} via {metodo} | ID: {pid}\n"
