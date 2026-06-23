@@ -241,6 +241,17 @@ def health():
     return jsonify({"status": "healthy", "app": "CUBOCRAFT"}), 200
 
 
+@app.route("/admin/trigger-ranking", methods=["POST"])
+def trigger_ranking():
+    """Endpoint temporal para disparar el job de ranking manualmente. Protegido por token."""
+    token = request.headers.get("X-Admin-Token", "")
+    if token != config.SECRET_KEY:
+        return jsonify({"error": "Unauthorized"}), 401
+    import threading
+    threading.Thread(target=_enviar_ranking_semanal, daemon=True).start()
+    return jsonify({"status": "ok", "message": "Ranking job iniciado en background"}), 200
+
+
 @app.route("/debug-config")
 def debug_config():
     """Muestra qué variables de entorno están seteadas (sin exponer valores)."""
