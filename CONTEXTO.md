@@ -1,5 +1,5 @@
 # CONTEXTO PROYECTO CUBOCRAFT
-Última actualización: 2026-06-21 (sesión noche — cierre)
+Última actualización: 2026-06-23
 
 ## DATOS GENERALES
 - Carpeta local: `/home/fernan/cubocraft/`
@@ -567,6 +567,54 @@ Fichas incluyen: uso obligatorio a partir de **2 m de altura** sobre el plano m�
 
 **Total EPP aprobadas: 28/40**
 
+## CAMBIOS EN CÓDIGO (2026-06-23) — Ranking mensual, OCR con Gemini Vision, validación cruzada de pagos
+
+### Job de ranking: período semanal → mensual
+- `_enviar_ranking_semanal()` en `webhook_server.py` ahora calcula **1° del mes → hoy** en lugar
+  de los últimos 7 días, para que los mensajes de WhatsApp coincidan exactamente con el dashboard web.
+- Mensajes actualizados: "junio 2026" en lugar de "semana del DD/MM al DD/MM".
+- Probado en vivo con los 3 vendedores reconectados al sandbox de Twilio (TFI):
+  - Fernanda 🏆 $145.252,50 — felicitación
+  - Fernando 🥈 $126.097,50 — motivación ($19.155 al 1°)
+  - Tomás — coaching generado por Gemini (sugiere categorías no trabajadas)
+
+### Endpoint temporal /admin/trigger-ranking
+- `POST /admin/trigger-ranking` con header `X-Admin-Token: cubocraft2026` dispara
+  `_enviar_ranking_semanal()` en un hilo daemon sin bloquear la respuesta HTTP.
+- Usado para disparar el job manualmente para filmar el TFI sin esperar el cron del lunes.
+- ⚠️ **PENDIENTE ELIMINAR** — token hardcodeado "cubocraft2026" en producción.
+
+### OCR de comprobantes: pytesseract → Gemini Vision
+- **Causa raíz del fallo silencioso**: `pytesseract` en `requirements.txt` instala solo el
+  wrapper Python, pero el binario `tesseract-ocr` nunca fue instalado en Render (no hay
+  `render.yaml` ni build script que lo instale). El `try/except` atrapaba el
+  `TesseractNotFoundError` y devolvía `""` — el OCR nunca funcionó en producción.
+- **Fix**: `_analizar_comprobante_gemini()` en `whatsapp_client.py`:
+  1. Descarga la imagen vía `requests.get()`
+  2. La codifica en base64
+  3. La envía a Gemini 2.5 Flash con prompt estructurado pidiendo JSON `{"texto": "...", "monto": N}`
+  4. Devuelve texto completo + monto como float
+- Más preciso que tesseract en comprobantes de transferencia argentinos.
+
+### Validación cruzada monto declarado vs detectado
+- `_parsear_monto_ocr()` eliminada — ahora el monto lo devuelve Gemini Vision directamente.
+- En `_handle_pago_comprobante()`: si `|monto_ocr - monto_declarado| / monto_declarado > 5%`,
+  genera alerta y la guarda en `session["pago_alerta_monto"]`.
+- En `_handle_pago_confirmar()`: si hay alerta, la incluye en la notificación al supervisor:
+  ```
+  ⚠️ El monto declarado ($7.000,00) no coincide con el detectado
+     en el comprobante ($6.000,00) — revisar con atención.
+  ```
+- El pago NO se bloquea — supervisor decide con información completa.
+- Estado actual: Gemini Vision detecta correctamente la discrepancia (log confirmado:
+  "Discrepancia de monto: declarado=7000.00 ocr=6000.00 pct=14.3%"), pero la alerta
+  aún no llega al mensaje del supervisor — investigación en curso (logs de tracing agregados).
+
+### Costo de migrar Twilio Sandbox a plan pago
+- Para el volumen actual (~10-20 mensajes/día): estimado ~$1-3 USD/mes.
+- Soluciona el límite diario del sandbox que bloquea pruebas en vivo.
+- Alternativa de mayor plazo: migrar a API oficial WhatsApp Business (Meta).
+
 ## CAMBIOS EN CÓDIGO (2026-06-21) — Fix zona horaria
 
 ### sheets_client.py y bot_handler.py
@@ -593,7 +641,8 @@ Fichas incluyen: uso obligatorio a partir de **2 m de altura** sobre el plano m�
 3g. Regenerar fichas Respiratoria (EPP-016/017/RES-03/04/05) — verificar normas antes
 3h. Regenerar fichas Cuerpo (EPP-020/021/022/CUE-04/05) — verificar normas antes
 4b. Aprobar/regenerar las ~48 fichas restantes en ESTADO=Borrador (MC y EPP categorías cubiertas)
-4. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
+4. ⚠️ **Eliminar endpoint `/admin/trigger-ranking`** y token hardcodeado "cubocraft2026" de `webhook_server.py` (temporal para TFI)
+4b. Corregir 2 pedidos con columnas desplazadas (P20260602135317, P20260602140406) — a mano en Sheet
 5. Probar flujo completo pedido punta a punta (incluye que el tope de crédito rechace correctamente)
 6. Probar flujo pago → supervisor confirma → vendedor notificado
 7. ~~Fix ranking en el bot~~ — **RESUELTO 2026-06-18**
@@ -617,7 +666,10 @@ Fichas incluyen: uso obligatorio a partir de **2 m de altura** sobre el plano m�
 - **Sin CLIENTES**: pedidos no registran el cliente final.
 - **Límite de crédito**: $100.000 hardcodeado en `config.py` (no por vendedor). El control ya se aplica.
 - **Twilio Sandbox**: límite diario de mensajes salientes bloquea pruebas en vivo.
-  Workaround temporal: esperar reset o usar número Twilio con plan pago. Solución definitiva: Meta API.
+  Costo de upgrade a plan pago: ~$1-3 USD/mes para el volumen actual. Solución definitiva: Meta API.
+- **Alerta discrepancia de pago**: Gemini Vision detecta el monto correctamente (confirmado en logs),
+  pero la alerta aún no llega al mensaje del supervisor — logs de tracing agregados para diagnosticar.
+- **Endpoint /admin/trigger-ranking**: token hardcodeado "cubocraft2026" en producción — eliminar tras TFI.
 - **Fichas en Borrador**: ~48 fichas con normas sin verificar (EPP categorías restantes + toda la sección MC).
   28 EPP ya Aprobadas. Revisar el resto manualmente o regenerar por lotes con los scripts `regenerar_*.py`.
 - **EPP-ALT-05**: PRODUCTOS corregido (IRAM-7516), ficha pendiente por rate limit diario de Gemini.
