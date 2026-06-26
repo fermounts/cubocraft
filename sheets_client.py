@@ -847,6 +847,39 @@ def registrar_pendiente(pregunta: str, respuesta: str, fuente: str) -> str:
     return registrar_pendiente_validacion(pregunta, respuesta, fuente)
 
 
+_HEADERS_GAPS = [
+    "ID", "FECHA", "PHONE", "PREGUNTA",
+    "CATEGORIA_PROBABLE", "ATRIBUTO_SOLICITADO", "CONFIANZA", "ESTADO",
+]
+
+
+def registrar_gap_conocimiento(
+    pregunta: str,
+    phone: str,
+    categoria: str = "",
+    atributo: str = "",
+    confianza: str = "",
+) -> str:
+    try:
+        ws = _ensure_sheet("GAPS_BASE_CONOCIMIENTO", _HEADERS_GAPS)
+        gid = f"GAP{datetime.now(_TZ_ARG).strftime('%Y%m%d%H%M%S')}"
+        ws.append_row([
+            gid,
+            datetime.now(_TZ_ARG).strftime("%Y-%m-%d %H:%M:%S"),
+            phone,
+            pregunta,
+            categoria,
+            atributo,
+            confianza,
+            "Pendiente",
+        ])
+        logger.info("Gap registrado: %s categoria=%r atributo=%r", gid, categoria, atributo)
+        return gid
+    except Exception as e:
+        logger.error("registrar_gap_conocimiento error: %s", e)
+        return "ERROR"
+
+
 def get_pendientes_del_dia() -> list[dict]:
     try:
         ws = _ensure_sheet("PENDIENTES_VALIDACION", _HEADERS_PENDIENTES)

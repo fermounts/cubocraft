@@ -276,6 +276,35 @@ def _ficha_a_contexto(r: dict) -> str:
     return " | ".join(partes)
 
 
+def _estructurar_gap(texto_usuario: str) -> dict:
+    """Segunda llamada a Gemini para clasificar una consulta no encontrada en la base."""
+    prompt = (
+        "Analizá esta pregunta de un vendedor de materiales de construcción y EPP. "
+        "Respondé SOLO con JSON con exactamente estas claves:\n"
+        '{"categoria": "<EPP - cascos|EPP - calzado|EPP - guantes|EPP - visual|'
+        "EPP - auditiva|EPP - altura|EPP - respiratoria|EPP - cuerpo|"
+        "Construcción - membranas|Construcción - morteros|Construcción - aislación|"
+        'fuera de catálogo>", '
+        '"atributo": "<norma|medida|rendimiento|precio|disponibilidad|modo de uso|otro>", '
+        '"confianza": "<alto|medio|bajo>"}\n\n'
+        f'Pregunta: "{texto_usuario}"'
+    )
+    _configure_gemini()
+    model = genai.GenerativeModel("gemini-2.5-flash")
+    resp = model.generate_content(
+        prompt,
+        generation_config=genai.GenerationConfig(max_output_tokens=100),
+    )
+    import json as _json
+    raw = resp.text.strip().strip("```json").strip("```").strip()
+    data = _json.loads(raw)
+    return {
+        "categoria": str(data.get("categoria", "")),
+        "atributo":  str(data.get("atributo", "")),
+        "confianza": str(data.get("confianza", "")),
+    }
+
+
 def procesar_consulta_ia(texto_usuario: str, empresa: str, phone: str = "") -> str:
     # Leer contexto RAG desde Sheets
     logger.info("RAG: leyendo BASE_CONOCIMIENTO...")
@@ -367,7 +396,21 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str, phone: str = "") -> s
     except Exception:
         logger.exception("RAG: fallo al registrar pendiente — se devuelve respuesta igual")
     if fuente == "NO_VALIDADO":
-        logger.info("RAG: gap detectado — pregunta no validada registrada phone=%s", phone)
+        enrich: dict = {}
+        if os.getenv("ENRICH_GAPS", "false").lower() == "true":
+            try:
+                enrich = _estructurar_gap(texto_usuario)
+                logger.info("RAG: gap enriquecido — %s", enrich)
+            except Exception:
+                logger.exception("RAG: fallo al estructurar gap — se registra sin enrich")
+        try:
+            sheets_client.registrar_gap_conocimiento(
+                pregunta=texto_usuario,
+                phone=phone,
+                **enrich,
+            )
+        except Exception:
+            logger.exception("RAG: fallo al registrar gap en GAPS_BASE_CONOCIMIENTO")
     return respuesta
 
 
