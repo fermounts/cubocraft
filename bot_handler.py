@@ -229,6 +229,8 @@ def _es_pregunta_abierta(texto: str) -> bool:
 
 def _detectar_fuente(respuesta: str) -> str:
     r = respuesta.lower()
+    if "no validado por cubocraft" in r:
+        return "NO_VALIDADO"
     if "base cubocraft" in r:
         return "BASE_CONOCIMIENTO"
     if "conocimiento general" in r:
@@ -274,7 +276,7 @@ def _ficha_a_contexto(r: dict) -> str:
     return " | ".join(partes)
 
 
-def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
+def procesar_consulta_ia(texto_usuario: str, empresa: str, phone: str = "") -> str:
     # Leer contexto RAG desde Sheets
     logger.info("RAG: leyendo BASE_CONOCIMIENTO...")
     try:
@@ -358,11 +360,14 @@ def procesar_consulta_ia(texto_usuario: str, empresa: str) -> str:
         return "No pude procesar tu consulta. Intentá de nuevo."
 
     fuente = _detectar_fuente(respuesta)
-    logger.info("RAG: registrando pendiente fuente=%s", fuente)
+    fuente_registro = f"{fuente} | {phone}" if fuente == "NO_VALIDADO" and phone else fuente
+    logger.info("RAG: registrando pendiente fuente=%s", fuente_registro)
     try:
-        sheets_client.registrar_pendiente(texto_usuario, respuesta, fuente)
+        sheets_client.registrar_pendiente(texto_usuario, respuesta, fuente_registro)
     except Exception:
         logger.exception("RAG: fallo al registrar pendiente — se devuelve respuesta igual")
+    if fuente == "NO_VALIDADO":
+        logger.info("RAG: gap detectado — pregunta no validada registrada phone=%s", phone)
     return respuesta
 
 
@@ -488,7 +493,7 @@ def _handle_menu(
         return f"Hola {vendedor.get('Nombre','')}! 👋\n\n{_menu_texto(empresa, es_supervisor)}"
 
     if _es_pregunta_abierta(texto_original):
-        respuesta = procesar_consulta_ia(texto_original, empresa)
+        respuesta = procesar_consulta_ia(texto_original, empresa, phone)
         session_store.set(phone, POST_ACCION, vendedor=vendedor)
         return f"🤖 {respuesta}" + _post_prompt()
 
@@ -991,7 +996,7 @@ def _handle_consulta_ia(phone: str, texto: str, vendedor: dict) -> str:
     empresa = session.get("empresa", "CUBO")
     if not texto:
         return "¿Cuál es tu consulta técnica?"
-    respuesta = procesar_consulta_ia(texto, empresa)
+    respuesta = procesar_consulta_ia(texto, empresa, phone)
     session_store.set(phone, POST_ACCION, vendedor=vendedor)
     return f"🤖 {respuesta}" + _post_prompt()
 
