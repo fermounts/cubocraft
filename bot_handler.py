@@ -36,6 +36,7 @@ ANULAR_PAGO_CONFIRM = "ANULAR_PAGO_CONFIRM"
 SUPER_MENU = "SUPER_MENU"
 SUPER_CONFIRMAR_PAGO = "SUPER_CONFIRMAR_PAGO"
 SUPER_CONFIRMAR_PAGO_CONFIRM = "SUPER_CONFIRMAR_PAGO_CONFIRM"
+SUPER_AUDIT_MONTO = "SUPER_AUDIT_MONTO"
 
 # ── Categorías de producto por empresa ────────────────────────────────────────
 # (clave en Apertura, nombre de display)
@@ -497,6 +498,7 @@ def procesar(phone: str, texto: str, media_url: str | None = None) -> str:
         SUPER_MENU:                  lambda: _handle_super_menu(phone, t, vendedor),
         SUPER_CONFIRMAR_PAGO:        lambda: _handle_super_confirmar_pago(phone, texto, vendedor),
         SUPER_CONFIRMAR_PAGO_CONFIRM:lambda: _handle_super_confirmar_pago_confirm(phone, t, vendedor),
+        SUPER_AUDIT_MONTO:           lambda: _handle_super_audit_monto(phone, texto, vendedor),
     }
 
     handler = handlers.get(estado)
@@ -955,6 +957,7 @@ def _handle_pago_comprobante(
     comprobante = texto or ""
 
     alerta_monto = ""
+    monto_ocr_detectado: float | None = None
     if media_url:
         es_valido, ocr_texto, monto_ocr = whatsapp_client.validar_comprobante_imagen(media_url)
         comprobante = ocr_texto or media_url
@@ -964,9 +967,9 @@ def _handle_pago_comprobante(
         if monto_ocr and monto_declarado > 0:
             diferencia_pct = abs(monto_ocr - monto_declarado) / monto_declarado
             if diferencia_pct > 0.05:
+                monto_ocr_detectado = monto_ocr
                 alerta_monto = (
-                    f"⚠️ El monto declarado (${monto_declarado:,.2f}) no coincide con el detectado "
-                    f"en el comprobante (${monto_ocr:,.2f}) — revisar con atención."
+                    f"Declarado: ${monto_declarado:,.2f} | Comprobante (OCR): ${monto_ocr:,.2f}"
                 )
                 logger.warning("Discrepancia de monto: declarado=%.2f ocr=%.2f pct=%.1f%%",
                                monto_declarado, monto_ocr, diferencia_pct * 100)
@@ -974,18 +977,23 @@ def _handle_pago_comprobante(
     monto = float(session.get("pago_monto") or 0)
     metodo = session.get("pago_metodo") or "?"
 
-    logger.info("pago_comprobante: alerta_monto=%r antes de guardar en sesión", alerta_monto)
+    logger.info("pago_comprobante: alerta_monto=%r monto_ocr=%s antes de guardar en sesión",
+                alerta_monto, monto_ocr_detectado)
     session_store.set(phone, PAGO_CONFIRMAR, vendedor=vendedor,
                       pago_monto=monto,
                       pago_metodo=metodo,
                       pago_comprobante=comprobante,
-                      pago_alerta_monto=alerta_monto)
-    return (
+                      pago_alerta_monto=alerta_monto,
+                      pago_monto_ocr=monto_ocr_detectado)
+    msg = (
         "📄 *Confirmar pago:*\n"
         f"Monto: ${monto:.2f}\n"
-        f"Método: {metodo}\n\n"
-        "¿Confirmás? (SI / NO)"
+        f"Método: {metodo}\n"
     )
+    if alerta_monto:
+        msg += "\nℹ️ Detectamos diferencia en el comprobante. El supervisor definirá el monto final.\n"
+    msg += "\n¿Confirmás? (SI / NO)"
+    return msg
 
 
 def _handle_pago_confirmar(phone: str, t: str, vendedor: dict) -> str:
@@ -995,16 +1003,23 @@ def _handle_pago_confirmar(phone: str, t: str, vendedor: dict) -> str:
         metodo = session.get("pago_metodo") or ""
         comprobante = session.get("pago_comprobante") or ""
         alerta_monto = session.get("pago_alerta_monto", "")
-        logger.info("pago_confirmar: alerta_monto=%r leído de sesión", alerta_monto)
-        pid, _, _ = sheets_client.registrar_pago(vendedor, monto, metodo, comprobante)
+        monto_ocr = session.get("pago_monto_ocr")
+        logger.info("pago_confirmar: alerta_monto=%r monto_ocr=%s leído de sesión", alerta_monto, monto_ocr)
+        pid, _, _ = sheets_client.registrar_pago(vendedor, monto, metodo, comprobante, monto_ocr=monto_ocr)
         session_store.set(phone, POST_ACCION, vendedor=vendedor)
-        notif = (
-            f"💰 Pago pendiente de confirmación\n"
-            f"Vendedor: {vendedor.get('Nombre','?')} | ${monto:.2f} via {metodo} | ID: {pid}\n"
-        )
         if alerta_monto:
-            notif += f"\n{alerta_monto}\n"
-        notif += "Panel supervisor (9) → B para confirmar o rechazar"
+            notif = (
+                f"⚠️ Pago con discrepancia — requiere auditoría\n"
+                f"Vendedor: {vendedor.get('Nombre','?')} | ID: {pid}\n"
+                f"{alerta_monto}\n"
+                "Panel supervisor (9) → B para confirmar o rechazar"
+            )
+        else:
+            notif = (
+                f"💰 Pago pendiente de confirmación\n"
+                f"Vendedor: {vendedor.get('Nombre','?')} | ${monto:.2f} via {metodo} | ID: {pid}\n"
+                "Panel supervisor (9) → B para confirmar o rechazar"
+            )
         whatsapp_client.notificar_supervisora(notif)
         return (
             f"✅ *Pago enviado para revisión.*\nID: {pid}\nMonto: ${monto:.2f}\n"
@@ -1192,9 +1207,10 @@ def _iniciar_confirmar_pagos(phone: str, vendedor: dict) -> str:
         return "No hay pagos pendientes de confirmación." + _post_prompt()
     lines = ["💰 *Pagos pendientes de confirmación:*\n"]
     for i, p in enumerate(pagos, 1):
+        marca = " ⚠️ AUDITORÍA" if str(p.get("Estado", "")).upper() == "PENDIENTE_AUDITORIA" else ""
         lines.append(
             f"{i}. {p.get('ID_Pago','?')} — {p.get('Nombre_Vendedor','?')} "
-            f"— ${p.get('Monto','?')} via {p.get('Metodo','?')} — {p.get('Fecha','?')}"
+            f"— ${p.get('Monto','?')} via {p.get('Metodo','?')} — {p.get('Fecha','?')}{marca}"
         )
     lines.append("\n*C<n>* para confirmar | *R<n>* para rechazar  (ej: C1 · R2)")
     return "\n".join(lines)
@@ -1215,6 +1231,23 @@ def _handle_super_confirmar_pago(phone: str, texto: str, vendedor: dict) -> str:
         return f"Número inválido. Hay {len(pagos)} pago(s) listado(s)."
 
     accion = t[0]
+    estado_pago = str(pago.get("Estado", "")).upper()
+
+    if accion == "C" and estado_pago == "PENDIENTE_AUDITORIA":
+        monto_declarado = pago.get("Monto", "?")
+        monto_ocr_val = pago.get("Monto_OCR", "?")
+        session_store.set(phone, SUPER_AUDIT_MONTO, vendedor=vendedor,
+                          pago_a_gestionar=pago, accion_pago=accion)
+        return (
+            f"⚠️ *Pago con discrepancia detectada*\n"
+            f"ID: {pago.get('ID_Pago','?')} — {pago.get('Nombre_Vendedor','?')}\n"
+            f"Declarado: ${monto_declarado} | OCR: ${monto_ocr_val}\n\n"
+            "¿Con qué monto confirmás?\n"
+            f"D = declarado (${monto_declarado})\n"
+            f"O = comprobante OCR (${monto_ocr_val})\n"
+            "O escribí el monto correcto (ej: 6500)"
+        )
+
     accion_txt = "confirmar" if accion == "C" else "rechazar"
     session_store.set(phone, SUPER_CONFIRMAR_PAGO_CONFIRM, vendedor=vendedor,
                       pago_a_gestionar=pago, accion_pago=accion)
@@ -1225,18 +1258,59 @@ def _handle_super_confirmar_pago(phone: str, texto: str, vendedor: dict) -> str:
     )
 
 
+def _handle_super_audit_monto(phone: str, texto: str, vendedor: dict) -> str:
+    session = session_store.get(phone)
+    pago = session.get("pago_a_gestionar", {})
+    t = texto.strip().upper()
+
+    try:
+        monto_declarado = float(str(pago.get("Monto", 0)).replace(",", "."))
+    except (ValueError, TypeError):
+        monto_declarado = 0.0
+    try:
+        monto_ocr = float(str(pago.get("Monto_OCR", 0) or 0).replace(",", "."))
+    except (ValueError, TypeError):
+        monto_ocr = 0.0
+
+    if t == "D":
+        monto_final = monto_declarado
+    elif t == "O":
+        monto_final = monto_ocr
+    else:
+        try:
+            monto_final = float(texto.replace(",", ".").replace("$", "").strip())
+            if monto_final <= 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            return (
+                f"Opción no válida. Escribí D (declarado: ${monto_declarado:,.2f}), "
+                f"O (OCR: ${monto_ocr:,.2f}) o un monto numérico (ej: 6500)."
+            )
+
+    session_store.set(phone, SUPER_CONFIRMAR_PAGO_CONFIRM, vendedor=vendedor,
+                      pago_a_gestionar=pago, accion_pago="C",
+                      monto_final_auditoria=monto_final)
+    return (
+        f"¿Confirmás *{pago.get('ID_Pago','?')}* de {pago.get('Nombre_Vendedor','?')} "
+        f"por *${monto_final:,.2f}*?\n\n"
+        "Esta acción no se puede deshacer. (SI / NO)"
+    )
+
+
 def _handle_super_confirmar_pago_confirm(phone: str, t: str, vendedor: dict) -> str:
     session = session_store.get(phone)
     pago = session.get("pago_a_gestionar", {})
     accion = session.get("accion_pago", "C")
     id_pago = str(pago.get("ID_Pago", ""))
     id_vendedor_pago = str(pago.get("ID_Vendedor", ""))
+    monto_final = session.get("monto_final_auditoria")
 
     if t in ("si", "sí"):
         if accion == "C":
-            ok = sheets_client.confirmar_pago(id_pago)
-            msg_sup = f"✅ Pago {id_pago} confirmado."
-            msg_vendedor = f"✅ Tu pago {id_pago} de ${pago.get('Monto','?')} fue confirmado. ¡Gracias!"
+            ok = sheets_client.confirmar_pago(id_pago, monto_final=monto_final)
+            monto_display = f"${monto_final:,.2f}" if monto_final is not None else f"${pago.get('Monto','?')}"
+            msg_sup = f"✅ Pago {id_pago} confirmado por {monto_display}."
+            msg_vendedor = f"✅ Tu pago {id_pago} de {monto_display} fue confirmado. ¡Gracias!"
         else:
             ok = sheets_client.anular_pago(id_pago)
             msg_sup = f"❌ Pago {id_pago} rechazado (→ ANULADO)."

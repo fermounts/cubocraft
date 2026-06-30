@@ -248,7 +248,7 @@ def get_balance_vendedor(vendedor: dict) -> dict:
             _f(r.get("Monto"))
             for r in pagos
             if str(r.get("ID_Vendedor", "")) == vid
-            and str(r.get("Estado", "")).upper() == "PENDIENTE"
+            and str(r.get("Estado", "")).upper() in ("PENDIENTE", "PENDIENTE_AUDITORIA")
         )
         deuda_real         = round(total_pedidos - pagos_confirmados, 2)
         credito_provisional = round(pagos_pendientes, 2)
@@ -288,15 +288,38 @@ def get_saldo(vendedor: dict) -> float:
         return 0.0
 
 
+_pagos_schema_updated = False
+
+
+def _ensure_pagos_monto_ocr() -> None:
+    global _pagos_schema_updated
+    if _pagos_schema_updated:
+        return
+    ws = _get_sheet("PAGOS")
+    headers = ws.row_values(1)
+    if "Monto_OCR" not in headers:
+        ws.update_cell(1, len(headers) + 1, "Monto_OCR")
+        logger.info("PAGOS: columna Monto_OCR agregada en col %d", len(headers) + 1)
+    _pagos_schema_updated = True
+
+
 def registrar_pago(
     vendedor: dict,
     monto: float,
     metodo: str,
     comprobante: str,
+    monto_ocr: float | None = None,
 ) -> tuple[str, float, float]:
     try:
+        _ensure_pagos_monto_ocr()
         ws = _get_sheet("PAGOS")
         pid = f"PAG{datetime.now(_TZ_ARG).strftime('%Y%m%d%H%M%S')}"
+        tiene_discrepancia = (
+            monto_ocr is not None
+            and monto > 0
+            and abs(monto_ocr - monto) / monto > 0.05
+        )
+        estado = "PENDIENTE_AUDITORIA" if tiene_discrepancia else "PENDIENTE"
         ws.append_row([
             pid,
             datetime.now(_TZ_ARG).strftime("%Y-%m-%d %H:%M:%S"),
@@ -305,9 +328,10 @@ def registrar_pago(
             str(monto),
             metodo,
             str(comprobante or ""),
-            "PENDIENTE",
+            estado,
+            str(monto_ocr) if monto_ocr is not None else "",
         ])
-        logger.info("Pago registrado como PENDIENTE: %s", pid)
+        logger.info("Pago registrado como %s: %s monto_ocr=%s", estado, pid, monto_ocr)
         return pid, 0.0, 0.0
     except Exception as e:
         logger.error("registrar_pago error: %s", e)
@@ -383,24 +407,27 @@ def get_pagos_pendientes_todos() -> list[dict]:
         ws = _get_sheet("PAGOS")
         return [
             r for r in ws.get_all_records()
-            if str(r.get("Estado", "")).upper() == "PENDIENTE"
+            if str(r.get("Estado", "")).upper() in ("PENDIENTE", "PENDIENTE_AUDITORIA")
         ]
     except Exception as e:
         logger.error("get_pagos_pendientes_todos error: %s", e)
         return []
 
 
-def confirmar_pago(id_pago: str) -> bool:
+def confirmar_pago(id_pago: str, monto_final: float | None = None) -> bool:
     try:
         ws = _get_sheet("PAGOS")
         records = ws.get_all_values()
         headers = records[0]
         col_id = headers.index("ID_Pago")
         col_estado = headers.index("Estado")
+        col_monto = headers.index("Monto") if "Monto" in headers else None
         for i, row in enumerate(records[1:], start=2):
-            if row[col_id] == id_pago and row[col_estado].upper() == "PENDIENTE":
+            if row[col_id] == id_pago and row[col_estado].upper() in ("PENDIENTE", "PENDIENTE_AUDITORIA"):
+                if monto_final is not None and col_monto is not None:
+                    ws.update_cell(i, col_monto + 1, str(monto_final))
                 ws.update_cell(i, col_estado + 1, "CONFIRMADO")
-                logger.info("Pago %s confirmado", id_pago)
+                logger.info("Pago %s confirmado monto_final=%s", id_pago, monto_final)
                 return True
         return False
     except Exception as e:
@@ -555,7 +582,7 @@ def get_dashboard_supervisor() -> dict:
 
         pagos_pend = sum(
             1 for p in pagos
-            if str(p.get("Estado", "")).upper() == "PENDIENTE"
+            if str(p.get("Estado", "")).upper() in ("PENDIENTE", "PENDIENTE_AUDITORIA")
         )
 
         ranking = _calcular_ranking_total(mes_actual, pedidos)
