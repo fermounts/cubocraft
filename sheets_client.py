@@ -311,7 +311,10 @@ def registrar_pago(
     monto_ocr: float | None = None,
 ) -> tuple[str, float, float]:
     try:
-        _ensure_pagos_monto_ocr()
+        try:
+            _ensure_pagos_monto_ocr()
+        except Exception:
+            logger.exception("registrar_pago: fallo al verificar col Monto_OCR — se continúa igual")
         ws = _get_sheet("PAGOS")
         pid = f"PAG{datetime.now(_TZ_ARG).strftime('%Y%m%d%H%M%S')}"
         tiene_discrepancia = (

@@ -1006,6 +1006,13 @@ def _handle_pago_confirmar(phone: str, t: str, vendedor: dict) -> str:
         monto_ocr = session.get("pago_monto_ocr")
         logger.info("pago_confirmar: alerta_monto=%r monto_ocr=%s leído de sesión", alerta_monto, monto_ocr)
         pid, _, _ = sheets_client.registrar_pago(vendedor, monto, metodo, comprobante, monto_ocr=monto_ocr)
+        if pid == "ERROR":
+            logger.error("pago_confirmar: registrar_pago devolvió ERROR para phone=%s monto=%.2f", phone, monto)
+            return (
+                "⚠️ Hubo un error al registrar el pago. "
+                "Avisale al supervisor para que lo registre manualmente."
+                + _post_prompt()
+            )
         session_store.set(phone, POST_ACCION, vendedor=vendedor)
         if alerta_monto:
             notif = (
